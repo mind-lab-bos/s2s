@@ -20,7 +20,7 @@ ratings <- data %>%
 
 ```{r}
 bmrq <- data %>%
-  dplyr::select("X1..When.I.share.music.with.someone.I.feel.a.special.connection.with.that.person....Completely.Disagree.Completely.Agree":"X20..When.I.hear.a.tune.I.like.a.lot.I.can.t.help.tapping.or.moving.to.its.beat....Completely.Disagree.Completely.Agree")
+  dplyr::select("X1..When.I.share.music.with.someone.I.feel.a.special.connection.with.that.person....Completely.Disagree.Completely.Agree":"X20..When.I.hear.a.tune.I.like.a.lot.I.can.t.help.tapping.or.moving.to.its.beat....Completely.Disagree.Completely.Agree", "I.sometimes.feel.like.I.am..one..with.the.music....Completely.disagree.Completely.agree", "While.listening.to.music..I.may.become.so.involved.that.I.may.forget.about.myself.and.my..surroundings....Completely.disagree.Completely.agree", "It.is.sometimes.possible.for.me.to.be.completely.immersed.in.music.and.to.feel.as.if.my..whole.state.of.consciousness.has.been.temporarily.altered....Completely.disagree.Completely.agree", "When.I.am.listening.to.music..I.can.tune.out.everything.else....Completely.disagree.Completely.agree")
 
 # BMRQ columns to reverse code and sub-score
 cols_reverse <- c("X2..In.my.free.time.I.hardly.listen.to.music....Completely.Disagree.Completely.Agree",
@@ -51,25 +51,25 @@ cols_socialreward <-c("X1..When.I.share.music.with.someone.I.feel.a.special.conn
   "X13..I.like.to.sing.or.play.an.instrument.with.other.people....Completely.Disagree.Completely.Agree",
                      "X16..At.a.concert.I.feel.connected.to.the.performers.and.the.audience....Completely.Disagree.Completely.Agree")
 
+cols_absorption <- c("I.sometimes.feel.like.I.am..one..with.the.music....Completely.disagree.Completely.agree", "While.listening.to.music..I.may.become.so.involved.that.I.may.forget.about.myself.and.my..surroundings....Completely.disagree.Completely.agree", "It.is.sometimes.possible.for.me.to.be.completely.immersed.in.music.and.to.feel.as.if.my..whole.state.of.consciousness.has.been.temporarily.altered....Completely.disagree.Completely.agree", "When.I.am.listening.to.music..I.can.tune.out.everything.else....Completely.disagree.Completely.agree")
+
 
 # Reverse code
 bmrq[cols_reverse] <- lapply(bmrq[cols_reverse], reverseCode)
 
 
 # Add sub-scores and total to main df
-ratings$BMRQ_total <- apply(bmrq,1, sum) # total BMRQ scores --> Need to add absorption scores
+ratings$eBMRQ_total <- apply(bmrq,1, sum) # total BMRQ scores --> Need to add absorption scores
 ratings$BMRQ_emotion <- apply(bmrq[cols_emotion], 1,sum)
 ratings$BMRQ_sensorimotor <- apply(bmrq[cols_sensorimotor],1, sum)
 ratings$BMRQ_moodreg <-apply(bmrq[cols_moodreg],1, sum)
 ratings$BMRQ_musicseek <- apply(bmrq[cols_musicseek],1, sum)
 ratings$BMRQ_socialreward <- apply(bmrq[cols_socialreward],1, sum)
+ratings$BMRQ_absorption<- apply(bmrq[cols_absorption],1, sum)
 
-quantile(ratings$BMRQ_total, probs = c(.1), na.rm=TRUE)
+quantile(ratings$eBMRQ_total, probs = c(.1), na.rm=TRUE)
 ```
 
 ```{r}
-cols_absorption <- c("X22..I.sometimes.feel.like.I.am..one..with.the.music....Completely.Disagree.Completely.Agree", "X23..While.listening.to.music..I.may.become.so.involved.that.I.may.forget.about.myself.and.my.surroundings....Completely.Disagree.Completely.Agree", "X24..It.is.sometimes.possible.for.me.to.be.completely.immersed.in.music.and.to.feel.as.if.my.whole.state.of.consciousness.has.been.temporarily.altered....Completely.Disagree.Completely.Agree", "X25..When.listening.to.great.music.I.sometimes.feel.as.if.I.am.being.lifted.into.the.air....Completely.Disagree.Completely.Agree")
-
-df$BMRQ_absorption <- apply(bmrq[cols_absorption],1, sum)
 
 ```
