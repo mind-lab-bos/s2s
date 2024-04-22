@@ -13,10 +13,12 @@ source("reverseCode.R")
 data <- read.csv(file='../data/s2s_April 18, 2024_08.54.csv')
 ```
 
+#make ratings df
 ```{r}
 ratings <- data %>%
   select("ResponseId", "X1_Q397":"X48_Q454")
 ```
+
 
 ```{r}
 bmrq <- data %>%
@@ -59,7 +61,7 @@ bmrq[cols_reverse] <- lapply(bmrq[cols_reverse], reverseCode)
 
 
 # Add sub-scores and total to main df
-ratings$eBMRQ_total <- apply(bmrq,1, sum) # total BMRQ scores --> Need to add absorption scores
+ratings$eBMRQ_total <- apply(bmrq,1, sum) 
 ratings$BMRQ_emotion <- apply(bmrq[cols_emotion], 1,sum)
 ratings$BMRQ_sensorimotor <- apply(bmrq[cols_sensorimotor],1, sum)
 ratings$BMRQ_moodreg <-apply(bmrq[cols_moodreg],1, sum)
@@ -70,6 +72,180 @@ ratings$BMRQ_absorption<- apply(bmrq[cols_absorption],1, sum)
 quantile(ratings$eBMRQ_total, probs = c(.1), na.rm=TRUE)
 ```
 
+
+#GoldMSI Scoring
+```{r}
+Gold <- data %>%
+  dplyr::select("X1..I.spend.a.lot.of.my.free.time.doing.music.related.activities....Completely.Disagree.Completely.Agree":"X38..I.listen.attentively.to.music.for.___.per.day.")
+
+#delete atttention checking question
+Gold$Mark..2..for.this.question. <- NULL
+
+#change text responses
+#Q33
+Gold$X33..At.the.peak.of.my.interest..I.practiced.___.hours.per.day.on.my.primary.instrument.[Gold$X33..At.the.peak.of.my.interest..I.practiced.___.hours.per.day.on.my.primary.instrument.=='5 or more'] <- 7
+Gold$X33..At.the.peak.of.my.interest..I.practiced.___.hours.per.day.on.my.primary.instrument.[Gold$X33..At.the.peak.of.my.interest..I.practiced.___.hours.per.day.on.my.primary.instrument.=='4-Mar'] <- 6
+Gold$X33..At.the.peak.of.my.interest..I.practiced.___.hours.per.day.on.my.primary.instrument.[Gold$X33..At.the.peak.of.my.interest..I.practiced.___.hours.per.day.on.my.primary.instrument.=='2'] <- 5
+Gold$X33..At.the.peak.of.my.interest..I.practiced.___.hours.per.day.on.my.primary.instrument.[Gold$X33..At.the.peak.of.my.interest..I.practiced.___.hours.per.day.on.my.primary.instrument.=='1.5'] <- 4
+Gold$X33..At.the.peak.of.my.interest..I.practiced.___.hours.per.day.on.my.primary.instrument.[Gold$X33..At.the.peak.of.my.interest..I.practiced.___.hours.per.day.on.my.primary.instrument.=='1'] <- 3
+Gold$X33..At.the.peak.of.my.interest..I.practiced.___.hours.per.day.on.my.primary.instrument.[Gold$X33..At.the.peak.of.my.interest..I.practiced.___.hours.per.day.on.my.primary.instrument.=='0.5'] <- 2
+Gold$X33..At.the.peak.of.my.interest..I.practiced.___.hours.per.day.on.my.primary.instrument.[Gold$X33..At.the.peak.of.my.interest..I.practiced.___.hours.per.day.on.my.primary.instrument.=='0'] <- 1
+Gold$X33..At.the.peak.of.my.interest..I.practiced.___.hours.per.day.on.my.primary.instrument. <- as.numeric(Gold$X33..At.the.peak.of.my.interest..I.practiced.___.hours.per.day.on.my.primary.instrument.)
+#Q32
+Gold$X32..I.engaged.in.regular..daily.practice.of.a.musical.instrument..including.voice..for.___.years.[Gold$X32..I.engaged.in.regular..daily.practice.of.a.musical.instrument..including.voice..for.___.years.=='10 or more'] <- 7
+Gold$X32..I.engaged.in.regular..daily.practice.of.a.musical.instrument..including.voice..for.___.years.[Gold$X32..I.engaged.in.regular..daily.practice.of.a.musical.instrument..including.voice..for.___.years.=='9-Jun'] <- 6
+Gold$X32..I.engaged.in.regular..daily.practice.of.a.musical.instrument..including.voice..for.___.years.[Gold$X32..I.engaged.in.regular..daily.practice.of.a.musical.instrument..including.voice..for.___.years.=='5-Apr'] <- 5
+Gold$X32..I.engaged.in.regular..daily.practice.of.a.musical.instrument..including.voice..for.___.years.[Gold$X32..I.engaged.in.regular..daily.practice.of.a.musical.instrument..including.voice..for.___.years.=='3'] <- 4
+Gold$X32..I.engaged.in.regular..daily.practice.of.a.musical.instrument..including.voice..for.___.years.[Gold$X32..I.engaged.in.regular..daily.practice.of.a.musical.instrument..including.voice..for.___.years.=='2'] <- 3
+Gold$X32..I.engaged.in.regular..daily.practice.of.a.musical.instrument..including.voice..for.___.years.[Gold$X32..I.engaged.in.regular..daily.practice.of.a.musical.instrument..including.voice..for.___.years.=='1'] <- 2
+Gold$X32..I.engaged.in.regular..daily.practice.of.a.musical.instrument..including.voice..for.___.years.[Gold$X32..I.engaged.in.regular..daily.practice.of.a.musical.instrument..including.voice..for.___.years.=='0'] <- 1
+Gold$X32..I.engaged.in.regular..daily.practice.of.a.musical.instrument..including.voice..for.___.years. <- as.numeric(Gold$X32..I.engaged.in.regular..daily.practice.of.a.musical.instrument..including.voice..for.___.years.)
+#Q34
+Gold$X34..I.have.attended.___.live.music.events.as.an.audience.member.in.the.past.twelve.months.[Gold$X34..I.have.attended.___.live.music.events.as.an.audience.member.in.the.past.twelve.months.=='11 or more'] <- 7
+Gold$X34..I.have.attended.___.live.music.events.as.an.audience.member.in.the.past.twelve.months.[Gold$X34..I.have.attended.___.live.music.events.as.an.audience.member.in.the.past.twelve.months.=='10-Jul'] <- 6
+Gold$X34..I.have.attended.___.live.music.events.as.an.audience.member.in.the.past.twelve.months.[Gold$X34..I.have.attended.___.live.music.events.as.an.audience.member.in.the.past.twelve.months.=='6-Apr'] <- 5
+Gold$X34..I.have.attended.___.live.music.events.as.an.audience.member.in.the.past.twelve.months.[Gold$X34..I.have.attended.___.live.music.events.as.an.audience.member.in.the.past.twelve.months.=='3'] <- 4
+Gold$X34..I.have.attended.___.live.music.events.as.an.audience.member.in.the.past.twelve.months.[Gold$X34..I.have.attended.___.live.music.events.as.an.audience.member.in.the.past.twelve.months.=='2'] <- 3
+Gold$X34..I.have.attended.___.live.music.events.as.an.audience.member.in.the.past.twelve.months.[Gold$X34..I.have.attended.___.live.music.events.as.an.audience.member.in.the.past.twelve.months.=='1'] <- 2
+Gold$X34..I.have.attended.___.live.music.events.as.an.audience.member.in.the.past.twelve.months.[Gold$X34..I.have.attended.___.live.music.events.as.an.audience.member.in.the.past.twelve.months.=='0'] <- 1
+Gold$X34..I.have.attended.___.live.music.events.as.an.audience.member.in.the.past.twelve.months. <- as.numeric(Gold$X34..I.have.attended.___.live.music.events.as.an.audience.member.in.the.past.twelve.months.)
+#Q35
+Gold$X35..I.have.had.formal.training.in.music.theory.for.__.years[Gold$X35..I.have.had.formal.training.in.music.theory.for.__.years=='7 or more'] <- 7
+Gold$X35..I.have.had.formal.training.in.music.theory.for.__.years[Gold$X35..I.have.had.formal.training.in.music.theory.for.__.years=='6-Apr'] <- 6
+Gold$X35..I.have.had.formal.training.in.music.theory.for.__.years[Gold$X35..I.have.had.formal.training.in.music.theory.for.__.years=='3'] <- 5
+Gold$X35..I.have.had.formal.training.in.music.theory.for.__.years[Gold$X35..I.have.had.formal.training.in.music.theory.for.__.years=='2'] <- 4
+Gold$X35..I.have.had.formal.training.in.music.theory.for.__.years[Gold$X35..I.have.had.formal.training.in.music.theory.for.__.years=='1'] <- 3
+Gold$X35..I.have.had.formal.training.in.music.theory.for.__.years[Gold$X35..I.have.had.formal.training.in.music.theory.for.__.years=='0.5'] <- 2
+Gold$X35..I.have.had.formal.training.in.music.theory.for.__.years[Gold$X35..I.have.had.formal.training.in.music.theory.for.__.years=='0'] <- 1
+Gold$X35..I.have.had.formal.training.in.music.theory.for.__.years <- as.numeric(Gold$X35..I.have.had.formal.training.in.music.theory.for.__.years)
+#Q36
+Gold$X36..I.have.had.__.years.of.formal.training.on.a.musical.instrument..including.voice..during.my.lifetime.[Gold$X36..I.have.had.__.years.of.formal.training.on.a.musical.instrument..including.voice..during.my.lifetime.=='10 or more'] <- 7
+Gold$X36..I.have.had.__.years.of.formal.training.on.a.musical.instrument..including.voice..during.my.lifetime.[Gold$X36..I.have.had.__.years.of.formal.training.on.a.musical.instrument..including.voice..during.my.lifetime.=='9-Jun'] <- 6
+Gold$X36..I.have.had.__.years.of.formal.training.on.a.musical.instrument..including.voice..during.my.lifetime.[Gold$X36..I.have.had.__.years.of.formal.training.on.a.musical.instrument..including.voice..during.my.lifetime.=='5-Mar'] <- 5
+Gold$X36..I.have.had.__.years.of.formal.training.on.a.musical.instrument..including.voice..during.my.lifetime.[Gold$X36..I.have.had.__.years.of.formal.training.on.a.musical.instrument..including.voice..during.my.lifetime.=='2'] <- 4
+Gold$X36..I.have.had.__.years.of.formal.training.on.a.musical.instrument..including.voice..during.my.lifetime.[Gold$X36..I.have.had.__.years.of.formal.training.on.a.musical.instrument..including.voice..during.my.lifetime.=='1'] <- 3
+Gold$X36..I.have.had.__.years.of.formal.training.on.a.musical.instrument..including.voice..during.my.lifetime.[Gold$X36..I.have.had.__.years.of.formal.training.on.a.musical.instrument..including.voice..during.my.lifetime.=='0.5'] <- 2
+Gold$X36..I.have.had.__.years.of.formal.training.on.a.musical.instrument..including.voice..during.my.lifetime.[Gold$X36..I.have.had.__.years.of.formal.training.on.a.musical.instrument..including.voice..during.my.lifetime.=='0'] <- 1
+Gold$X36..I.have.had.__.years.of.formal.training.on.a.musical.instrument..including.voice..during.my.lifetime. <- as.numeric(Gold$X36..I.have.had.__.years.of.formal.training.on.a.musical.instrument..including.voice..during.my.lifetime.)
+#Q37
+Gold$X37..I.can.play.___.musical.instruments[Gold$X37..I.can.play.___.musical.instruments=='6 or more'] <- 7
+Gold$X37..I.can.play.___.musical.instruments[Gold$X37..I.can.play.___.musical.instruments=='5'] <- 6
+Gold$X37..I.can.play.___.musical.instruments[Gold$X37..I.can.play.___.musical.instruments=='4'] <- 5
+Gold$X37..I.can.play.___.musical.instruments[Gold$X37..I.can.play.___.musical.instruments=='3'] <- 4
+Gold$X37..I.can.play.___.musical.instruments[Gold$X37..I.can.play.___.musical.instruments=='2'] <- 3
+Gold$X37..I.can.play.___.musical.instruments[Gold$X37..I.can.play.___.musical.instruments=='1'] <- 2
+Gold$X37..I.can.play.___.musical.instruments[Gold$X37..I.can.play.___.musical.instruments=='0'] <- 1
+Gold$X37..I.can.play.___.musical.instruments <- as.numeric(Gold$X37..I.can.play.___.musical.instruments)
+
+#Q38
+Gold$X38..I.listen.attentively.to.music.for.___.per.day.[Gold$X38..I.listen.attentively.to.music.for.___.per.day.=='4 hours or more'] <- 7
+Gold$X38..I.listen.attentively.to.music.for.___.per.day.[Gold$X38..I.listen.attentively.to.music.for.___.per.day.=='2-3 hours'] <- 6
+Gold$X38..I.listen.attentively.to.music.for.___.per.day.[Gold$X38..I.listen.attentively.to.music.for.___.per.day.=='2 hours'] <- 5
+Gold$X38..I.listen.attentively.to.music.for.___.per.day.[Gold$X38..I.listen.attentively.to.music.for.___.per.day.=='60-90 minutes'] <- 4
+Gold$X38..I.listen.attentively.to.music.for.___.per.day.[Gold$X38..I.listen.attentively.to.music.for.___.per.day.=='30-60 minutes'] <- 3
+Gold$X38..I.listen.attentively.to.music.for.___.per.day.[Gold$X38..I.listen.attentively.to.music.for.___.per.day.=='15-30 minutes'] <- 2
+Gold$X38..I.listen.attentively.to.music.for.___.per.day.[Gold$X38..I.listen.attentively.to.music.for.___.per.day.=='0-15 minutes'] <- 1
+Gold$X38..I.listen.attentively.to.music.for.___.per.day. <- as.numeric(Gold$X38..I.listen.attentively.to.music.for.___.per.day.)
+
+# GoldMSI columns to reverse code and sub-score (for these questions, the correct answer (ie the more positive answer) is a higher number. Negative questions are reverse coded.) 
+
+cols_reverse <- c("X21..I.don.t.spend.much.of.my.disposable.income.on.music....Completely.Disagree.Completely.Agree" , 
+"X11..I.find.it.difficult.to.spot.mistakes.in.a.performance.of.a.song.even.if.I.know.the.tune....Completely.Disagree.Completely.Agree" , 
+"X13..I.have.trouble.recognizing.a.familiar.song.when.played.in.a.different.way.or.by.a.different.performer....Completely.Disagree.Completely.Agree" , 
+"X23..When.I.sing..I.have.no.idea.whether.I.m.in.tune.or.not....Completely.Disagree.Completely.Agree" , 
+"X14..I.have.never.been.complimented.for.my.talents.as.a.musical.performer....Completely.Disagree.Completely.Agree" , 
+"X27..I.would.not.consider.myself.a.musician....Completely.Disagree.Completely.Agree" , 
+"X17..I.am.not.able.to.sing.in.harmony.when.somebody.is.singing.a.familiar.tune....Completely.Disagree.Completely.Agree" , 
+"X25..I.don.t.like.singing.in.public.because.I.m.afraid.that.I.would.sing.wrong.notes....Completely.Disagree.Completely.Agree" , 
+"X9..Pieces.of.music.rarely.evoke.emotions.for.me....Completely.Disagree.Completely.Agree")
+
+cols_activeengagement <- c("X1..I.spend.a.lot.of.my.free.time.doing.music.related.activities....Completely.Disagree.Completely.Agree" , 
+"X3..I.enjoy.writing.about.music..for.example.on.blogs.and.forums....Completely.Disagree.Completely.Agree" , 
+"X8..I.m.intrigued.by.musical.styles.I.m.not.familiar.with.and.want.to.find.out.more....Completely.Disagree.Completely.Agree" , 
+"X15..I.often.read.or.search.the.internet.for.things.related.to.music....Completely.Disagree.Completely.Agree" , 
+"X21..I.don.t.spend.much.of.my.disposable.income.on.music....Completely.Disagree.Completely.Agree" , 
+"X24..Music.is.kind.of.an.addiction.for.me...I.couldn.t.live.without.it....Completely.Disagree.Completely.Agree" , 
+"X28..I.keep.track.of.new.music.that.I.come.across..e.g..new.artists.or.recordings.....Completely.Disagree.Completely.Agree" , 
+"X34..I.have.attended.___.live.music.events.as.an.audience.member.in.the.past.twelve.months." , 
+"X38..I.listen.attentively.to.music.for.___.per.day.")
+
+cols_perceptualabilities <- c("X5..I.am.able.to.judge.whether.someone.is.a.good.singer.or.not....Completely.Disagree.Completely.Agree" , 
+"X6..I.usually.know.when.I.m.hearing.a.song.for.the.first.time....Completely.Disagree.Completely.Agree" , "X11..I.find.it.difficult.to.spot.mistakes.in.a.performance.of.a.song.even.if.I.know.the.tune....Completely.Disagree.Completely.Agree" , 
+"X12..I.can.compare.and.discuss.differences.between.two.performances.or.versions.of.the.same.piece.of.music....Completely.Disagree.Completely.Agree" , 
+"X13..I.have.trouble.recognizing.a.familiar.song.when.played.in.a.different.way.or.by.a.different.performer....Completely.Disagree.Completely.Agree" , 
+"X18..I.can.tell.when.people.sing.or.play.out.of.time.with.the.beat....Completely.Disagree.Completely.Agree" , 
+"X22..I.can.tell.when.people.sing.or.play.out.of.tune....Completely.Disagree.Completely.Agree" , 
+"X23..When.I.sing..I.have.no.idea.whether.I.m.in.tune.or.not....Completely.Disagree.Completely.Agree" , 
+"X26..When.I.hear.a.music.I.can.usually.identify.its.genre....Completely.Disagree.Completely.Agree")
+
+cols_musicaltraining <- c("X14..I.have.never.been.complimented.for.my.talents.as.a.musical.performer....Completely.Disagree.Completely.Agree" , "X27..I.would.not.consider.myself.a.musician....Completely.Disagree.Completely.Agree", 
+"X32..I.engaged.in.regular..daily.practice.of.a.musical.instrument..including.voice..for.___.years." , 
+"X33..At.the.peak.of.my.interest..I.practiced.___.hours.per.day.on.my.primary.instrument." , ## think about how this is scored? doesn't seem like a lot of people answered
+"X35..I.have.had.formal.training.in.music.theory.for.__.years" , 
+"X36..I.have.had.__.years.of.formal.training.on.a.musical.instrument..including.voice..during.my.lifetime." , 
+"X37..I.can.play.___.musical.instruments")
+
+
+cols_singingabilities <- c("X4..If.somebody.starts.singing.a.song.I.don.t.know..I.can.usually.join.in....Completely.Disagree.Completely.Agree" , 
+"X7..I.can.sing.or.play.music.from.memory....Completely.Disagree.Completely.Agree" , 
+"X10..I.am.able.to.hit.the.right.notes.when.I.sing.along.with.a.recording....Completely.Disagree.Completely.Agree" , 
+"X17..I.am.not.able.to.sing.in.harmony.when.somebody.is.singing.a.familiar.tune....Completely.Disagree.Completely.Agree" , 
+"X25..I.don.t.like.singing.in.public.because.I.m.afraid.that.I.would.sing.wrong.notes....Completely.Disagree.Completely.Agree" , 
+"X29..After.hearing.a.new.song.two.or.three.times..I.can.usually.sing.it.by.myself....Completely.Disagree.Completely.Agree" , 
+"X30..I.only.need.to.hear.a.new.tune.once.and.I.can.sing.it.back.hours.later....Completely.Disagree.Completely.Agree")
+
+cols_emotion <- c("X2..I.sometimes.choose.music.that.can.trigger.shivers.down.my.spine....Completely.Disagree.Completely.Agree" , 
+"X9..Pieces.of.music.rarely.evoke.emotions.for.me....Completely.Disagree.Completely.Agree" , 
+"X16..I.often.pick.certain.music.to.motivate.or.excite.me....Completely.Disagree.Completely.Agree" , 
+"X19..I.am.able.to.identify.what.is.special.about.a.given.musical.piece....Completely.Disagree.Completely.Agree" , 
+"X20..I.am.able.to.talk.about.the.emotions.that.a.piece.of.music.evokes.for.me....Completely.Disagree.Completely.Agree" , 
+"X31..Music.can.evoke.my.memories.of.past.people.and.places....Completely.Disagree.Completely.Agree")
+
+cols_musicalsophistication <- c("X1..I.spend.a.lot.of.my.free.time.doing.music.related.activities....Completely.Disagree.Completely.Agree" , 
+           "X3..I.enjoy.writing.about.music..for.example.on.blogs.and.forums....Completely.Disagree.Completely.Agree" , 
+"X4..If.somebody.starts.singing.a.song.I.don.t.know..I.can.usually.join.in....Completely.Disagree.Completely.Agree" , 
+"X7..I.can.sing.or.play.music.from.memory....Completely.Disagree.Completely.Agree" , 
+"X10..I.am.able.to.hit.the.right.notes.when.I.sing.along.with.a.recording....Completely.Disagree.Completely.Agree" , 
+"X12..I.can.compare.and.discuss.differences.between.two.performances.or.versions.of.the.same.piece.of.music....Completely.Disagree.Completely.Agree" , 
+"X14..I.have.never.been.complimented.for.my.talents.as.a.musical.performer....Completely.Disagree.Completely.Agree" , 
+"X15..I.often.read.or.search.the.internet.for.things.related.to.music....Completely.Disagree.Completely.Agree" , 
+"X17..I.am.not.able.to.sing.in.harmony.when.somebody.is.singing.a.familiar.tune....Completely.Disagree.Completely.Agree" , 
+"X19..I.am.able.to.identify.what.is.special.about.a.given.musical.piece....Completely.Disagree.Completely.Agree" , 
+"X23..When.I.sing..I.have.no.idea.whether.I.m.in.tune.or.not....Completely.Disagree.Completely.Agree" , 
+"X24..Music.is.kind.of.an.addiction.for.me...I.couldn.t.live.without.it....Completely.Disagree.Completely.Agree" , 
+"X25..I.don.t.like.singing.in.public.because.I.m.afraid.that.I.would.sing.wrong.notes....Completely.Disagree.Completely.Agree" , 
+"X27..I.would.not.consider.myself.a.musician....Completely.Disagree.Completely.Agree" , 
+"X29..After.hearing.a.new.song.two.or.three.times..I.can.usually.sing.it.by.myself....Completely.Disagree.Completely.Agree" , 
+"X32..I.engaged.in.regular..daily.practice.of.a.musical.instrument..including.voice..for.___.years." , 
+"X33..At.the.peak.of.my.interest..I.practiced.___.hours.per.day.on.my.primary.instrument." , "X37..I.can.play.___.musical.instruments")
+
+
+
+
+# Reverse code
+
+Gold[cols_reverse] <- lapply(Gold[cols_reverse], reverseCode, min=1, max=7)
+
+# Add sub-scores and total to main df
+
+ratings$Gold_total <- apply(Gold,1, sum)/38 # total GoldMSI score
+ratings$Gold_activeengagement <- apply(Gold[cols_activeengagement], 1,sum)/9
+ratings$Gold_perceptualabilities <- apply(Gold[cols_perceptualabilities],1, sum)/9
+ratings$Gold_musicaltraining <-apply(Gold[cols_musicaltraining],1, sum)/7
+ratings$Gold_singingabilities <- apply(Gold[cols_singingabilities],1, sum)/7
+ratings$Gold_emotion <- apply(Gold[cols_emotion],1, sum)/6
+ratings$Gold_musicalsophistication <- apply(Gold[cols_musicalsophistication],1, sum)/18
+```
+
+#AIMS
+```{r}
+AIMS <- data %>%
+  dplyr::select("I.will.sometimes.move.my.hand.as.if.I.were..conducting..music....Completely.disagree.Completely.agree":"I.sometimes.feel.like.I.m.part.of.something.bigger.than.myself.when.I.listen.to.music....Completely.disagree.Completely.agree")
+
+ratings$AIMS_total <- apply(AIMS,1, sum) # total GoldMSI score
+```
+
+
 ```{r}
 PASS <- data %>%
   dplyr::select("I.have.usually.found.lovemaking.to.be.intensely.pleasurable.":"I.have.been.fascinated.with.the.dancing.of.flames.in.a.fireplace.")
@@ -78,8 +254,8 @@ PASS <- data %>%
 PASS$Mark..False..for.this.question. <- NULL
 
 # Replace 1s with 0s --> CURRENTLY REGULARLY CODED
-PASS[] <- lapply(PASS, gsub, pattern = "TRUE", replacement = 0, fixed = TRUE) 
-PASS[] <- lapply(PASS, gsub, pattern = "FALSE", replacement = 1, fixed = TRUE)
+PASS[] <- lapply(PASS, gsub, pattern = "TRUE", replacement = 1, fixed = TRUE) 
+PASS[] <- lapply(PASS, gsub, pattern = "FALSE", replacement = 0, fixed = TRUE)
 
 PASS <- mutate_all(PASS, function(x) as.numeric(as.character(x)))
 
@@ -196,6 +372,77 @@ ratings$PASS_temperature <- apply(PASS[cols_temperature],1, sum)
 ratings$PASS_general <- apply(PASS[cols_general],1, sum)
 ratings$PASS_smell <- apply(PASS[cols_smell],1, sum)
 ratings$PASS_noaud <- ratings$PASS_total - ratings$PASS_sound
+
+mean(ratings$PASS_noaud) + sd(ratings$PASS_noaud)
+
+hist(ratings$PASS_noaud)
+
+ggplot(data=ratings, aes(x=PASS_noaud, y=eBMRQ_total))+
+  geom_point() +
+  geom_hline(yintercept = 67, linetype="dotted") +
+  geom_vline(xintercept = 16.84785, linetype="dotted")
 ```
 
+
+```{r}
+master <- pivot_longer(ratings, !ResponseId & !eBMRQ_total:PASS_noaud)
+
+master$stim <- sub("_.*$", "", master$name)
+master$stim <- sub("X", "", master$stim)
+
+master$rating <-sub("X[[:digit:]]+_", "", master$name)
+master$pre_post <- NA
+
+i = 1:nrow(master)
+for (x in i){
+  if (master$rating[x] == "Q397") {
+    master$rating[x] <- "liking"
+    master$pre_post[x] <- "pre"
+  } else if (master$rating[x] == "Q454") {
+       master$rating[x] <- "liking"
+       master$pre_post[x] <- "post"
+  } else if (master$rating[x] == "Q406") {
+       master$rating[x] <- "speech"
+       master$pre_post[x] <- "post"
+  }else if (master$rating[x] == "Q402") {
+       master$rating[x] <- "speech"
+       master$pre_post[x] <- "pre"
+  }
+}
+
+master$stim <- as.numeric(master$stim)
+master$stim_type <- NA
+
+
+for (x in i){
+  if (master$stim[x] <= 24) {
+    master$stim_type[x] <- "illusion"
+  } else if (master$stim[x] > 24) {
+       master$stim_type[x] <- "control"
+  }
+}
+
+unique(ratings$value)
+
+for (x in i){
+  if (master$value[x] == "1 (I don't enjoy this sound at all)") {
+    master$value[x] <- "1"
+  } else if (master$value[x] == "10  (completely song-like)") {
+       master$value[x] <- "10"
+  } else if (master$value[x] == "10 (completely song-like)") {
+       master$value[x] <- "10"
+  }else if (master$value[x] == "1 (completely speech-like)") {
+       master$value[x] <- "1"
+  } else if (master$value[x] == "1 (I don't enjoy this sound at all") {
+       master$value[x] <- "1"
+  } else if (master$value[x] == "10 (I enjoy this sound very much)") {
+       master$value[x] <- "10"
+  }
+}
+
+master$value <- as.numeric(master$value)
+master$stim <- as.factor(master$stim)
+
+#write
+write.csv(master, file='../data/master.csv')
 ```

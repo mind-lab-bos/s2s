@@ -1,0 +1,55 @@
+---
+title: "2_matching"
+output: html_document
+date: "2024-04-22"
+---
+
+```{r}
+library(MatchIt)
+library(tidyverse)
+```
+
+```{r}
+master <- read.csv(file="../data/master.csv")
+```
+
+
+```{r}
+mean(ratings$PASS_noaud) + sd(ratings$PASS_noaud)
+quantile(ratings$eBMRQ_total, probs = c(.1), na.rm=TRUE)
+
+master %>% distinct(ResponseId, .keep_all = TRUE) %>%
+  ggplot(aes(x=PASS_noaud, y=eBMRQ_total))+
+  geom_point(alpha=0.65) +
+  geom_hline(yintercept = 67, linetype="dotted", color="blue") +
+  geom_vline(xintercept = 16.84785, linetype="dotted", color="red") +
+  theme_classic() +
+  xlab("PAS Scores (Sound Items Removed)") +
+  ylab("Total eBMRQ Scores")
+
+
+general_hedonics <- 
+  master %>%
+  subset(PASS_noaud<16.84785)
+
+musical_anhedonics <- subset(general_hedonics, eBMRQ_total< 67)
+musical_anhedonics$group = "Anhedonic"
+
+hedonics <- subset(general_hedonics, eBMRQ_total > 69)
+hedonics$group = "Hedonic"
+
+potential_matchedcontrols <- rbind(musical_anhedonics, hedonics)
+
+potential_matchedcontrols$group = ifelse(potential_matchedcontrols$group == 'Anhedonic', 1, 0)
+potential_matchedcontrols$group <- as.factor(potential_matchedcontrols$group)
+matched <- MatchIt::matchit(group ~ Gold_perceptualabilities + PASS_noaud, data=potential_matchedcontrols, method='nearest', ratio=1)
+summary(matched)
+df.match <- MatchIt::match.data(matched)[1:ncol(potential_matchedcontrols)]
+
+df.match$group = ifelse(df.match$group == '0', "Matched Controls", "Musical Anhedonics")
+
+controls <- subset(df.match, group=="Matched Controls")
+anhedonics <- subset(df.match, group=="Musical Anhedonics")
+
+write.csv(df.match, file="../data/anhedonics_matchedcontrols.csv")
+```

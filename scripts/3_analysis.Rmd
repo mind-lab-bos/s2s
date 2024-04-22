@@ -1,0 +1,84 @@
+---
+title: "3_analysis"
+output: html_document
+date: "2024-04-22"
+---
+
+```{r}
+library(tidyverse)
+library(lme4)
+library(lmerTest)
+```
+```{r}
+master <- read.csv(file='../data/master.csv')
+matched <- read.csv(file='../data/anhedonics_matchedcontrols.csv')
+```
+
+#subsetting
+```{r}
+liking_master <- master %>%
+  subset(rating=="liking")
+
+liking_matched <- matched %>%
+  subset(rating=="liking")
+
+speech_master <- master %>%
+  subset(rating=="speech")
+
+speech_matched <- matched %>%
+  subset(rating=="speech")
+```
+
+#prelim analyses
+```{r}
+#did the s2s illusion work in entire sample?
+speech_master$stim_type <- as.factor(speech_master$stim_type)
+speech_master$pre_post <- as.factor(speech_master$pre_post)
+contrasts(speech_master$stim_type) <- c(-0.5,0.5)
+contrasts(speech_master$pre_post) <- c(0.5,-0.5)
+speech_master$pre_post <- factor(speech_master$pre_post, levels = c("pre", "post"))
+
+m1 <- lmer(data=speech_master, scale(value) ~ stim_type*pre_post + (stim_type*pre_post|ResponseId) + (1|stim))
+summary(m1)
+
+ggplot(data=speech_master, aes(x=pre_post, y=value, color=stim_type)) + 
+ # ggdist::geom_dotsinterval() +
+  stat_summary(fun.data = 'mean_cl_normal', geom = 'errorbar', width = 0, alpha=0.5) +
+  stat_summary(fun.data = 'mean_cl_normal', geom = 'pointrange', alpha=0.5) +
+  theme_classic()+ 
+ # theme(legend.position = "none")+
+  ylab("Speech Rating") +
+  xlab("Pre vs. Post Repetition")
+
+#did liking change as well?
+liking_master$stim_type <- as.factor(liking_master$stim_type)
+liking_master$pre_post <- as.factor(liking_master$pre_post)
+contrasts(liking_master$stim_type) <- c(-0.5,0.5)
+contrasts(liking_master$pre_post) <- c(0.5,-0.5)
+
+m2 <- lmer(data=liking_master, scale(value) ~ stim_type*pre_post*eBMRQ_total + (stim_type*pre_post|ResponseId) + (1|stim))
+summary(m2)
+
+#how about for anhedonics?
+#speech
+speech_matched$stim_type <- as.factor(speech_matched$stim_type)
+speech_matched$pre_post <- as.factor(speech_matched$pre_post)
+speech_matched$group <- as.factor(speech_matched$group)
+contrasts(speech_matched$stim_type) <- c(-0.5,0.5)
+contrasts(speech_matched$pre_post) <- c(0.5,-0.5)
+contrasts(speech_matched$group) <- c(0.5,-0.5)
+
+m1 <- lmer(data=speech_matched, scale(value) ~ stim_type*pre_post*group + (pre_post|ResponseId) + (1|stim))
+summary(m1)
+
+#liking
+liking_matched$stim_type <- as.factor(liking_matched$stim_type)
+liking_matched$pre_post <- as.factor(liking_matched$pre_post)
+liking_matched$group <- as.factor(liking_matched$group)
+contrasts(liking_matched$stim_type) <- c(-0.5,0.5)
+contrasts(liking_matched$pre_post) <- c(0.5,-0.5)
+contrasts(liking_matched$group) <- c(0.5,-0.5)
+
+m1 <- lmer(data=liking_matched, scale(value) ~ stim_type*pre_post*group + (pre_post*stim_type|ResponseId) + (1|stim))
+summary(m1)
+```
