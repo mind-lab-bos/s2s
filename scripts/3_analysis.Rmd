@@ -8,11 +8,12 @@ date: "2024-04-22"
 library(tidyverse)
 library(lme4)
 library(lmerTest)
+library(emmeans)
 ```
 
 ```{r}
 master <- read.csv(file='../data/master.csv')
-matched <- read.csv(file='../data/anhedonics_matchedcontrols.csv')
+matched <- read.csv(file='../data/anhedonics_matchedcontrolslong.csv')
 ```
 
 #subsetting
@@ -179,6 +180,7 @@ contrasts(liking_masterprepost$stim_type) <- c(-0.5,0.5)
 m4 <- lmer(data=liking_masterprepost, scale(change) ~ stim_type*scale(eBMRQ_total) + (stim_type:scale(eBMRQ_total)|ResponseId) + (1|stim),control=lmerControl(optimizer="bobyqa"))
 summary(m4)
 
+
 #did musicality ratings differ by AIMS scores?
 m5 <- lmer(data=speech_masterprepost, scale(change) ~ stim_type*scale(AIMS_total) + (stim_type*scale(AIMS_total)|ResponseId) + (1|stim),control=lmerControl(optimizer="bobyqa"))
 summary(m5)
@@ -218,19 +220,135 @@ summary(m9)
 
 test(emmeans::emtrends(m9, pairwise ~ pre_post, var = "musicality", lmer.df = "satterthwaite",lmerTest.limit = 65492))
 
-ggplot(data=master_long, aes(x=musicality, y=liking))+
- # geom_jitter(width=0.2, alpha=0.3)+
-  stat_summary(fun.data = 'mean_se', geom = 'errorbar', width = 0, alpha=0.5) +
-  stat_summary(fun.data = 'mean_se', geom = 'pointrange', alpha=0.5)+
-  theme_classic()+
-  geom_smooth(method="lm") +
-  facet_grid(~pre_post) +
-  xlab("Musicality Ratings") +
-  ylab("Liking Ratings")
 
 #change
 m10 <- lmer(data=master_prepost, scale(liking_change) ~ scale(musicality_change)*stim_type + (scale(musicality_change)*stim_type|ResponseId) + (1|stim),control=lmerControl(optimizer="bobyqa"))
 summary(m10)
+```
+
+#misc plots
+```{r}
+#getting liking SEs to plot below:
+#musicality
+musicality_means_pre <- 
+master_long %>%
+  subset(pre_post=="pre") %>%
+  group_by(liking, pre_post) %>%
+  dplyr::summarize(musicality = mean(musicality, na.rm=TRUE)) %>%
+  drop_na()
+
+SE_musicality_pre <-
+  master_long %>%
+  subset(pre_post=="pre") %>%
+  group_by(liking, pre_post) %>%
+  dplyr::summarize(musicality_sd = sd(musicality, na.rm=TRUE)) %>%
+  drop_na()
+
+master_long_pre <- master_long %>%
+  subset(pre_post=="pre") 
+
+SE_musicality_pre$freq <-table(master_long_pre$musicality)
+
+SE_musicality_pre$SE_musicality <- (SE_musicality_pre$musicality_sd)/(sqrt(SE_musicality_pre$freq))
+
+musicality_means_post <- 
+master_long %>%
+  subset(pre_post=="post") %>%
+  #group_by(musicality, pre_post) %>%
+  dplyr::summarize(musicality = mean(musicality, na.rm=TRUE)) %>%
+  drop_na() 
+
+SE_musicality_post <-
+  master_long %>%
+  subset(pre_post=="post") %>%
+  group_by(liking, pre_post) %>%
+  dplyr::summarize(musicality_sd = sd(musicality, na.rm=TRUE)) %>%
+  drop_na() 
+
+master_long_post <- master_long %>%
+  subset(pre_post=="post") 
+
+SE_musicality_post$freq <-table(master_long_post$musicality)
+
+SE_musicality_post$SE_musicality <- (SE_musicality_post$musicality_sd)/(sqrt(SE_musicality_post$freq))
+
+SE_musicality_post <- merge(SE_musicality_post, musicality_means_post, by=c("liking", "pre_post"))
+
+SE_musicality_pre <- merge(SE_musicality_pre, musicality_means_pre, by=c("liking", "pre_post"))
+
+SE_musicality <- rbind(SE_musicality_post, SE_musicality_pre)
+
+names(SE_musicality)[1]<-"index"
+
+SE_musicality$lower <- SE_musicality$musicality-SE_musicality$SE_musicality
+SE_musicality$upper <- SE_musicality$musicality+SE_musicality$SE_musicality
+
+#liking
+liking_means_pre <- 
+master_long %>%
+  subset(pre_post=="pre") %>%
+  group_by(musicality, pre_post) %>%
+  dplyr::summarize(liking = mean(liking, na.rm=TRUE)) %>%
+  drop_na() 
+
+SE_liking_pre <-
+  master_long %>%
+  subset(pre_post=="pre") %>%
+  group_by(musicality, pre_post) %>%
+  dplyr::summarize(liking_sd = sd(liking, na.rm=TRUE)) %>%
+  drop_na()
+
+SE_liking_pre$freq <-table(master_long_pre$liking)
+
+SE_liking_pre$SE_liking <- (SE_liking_pre$liking_sd)/(sqrt(SE_liking_pre$freq))
+
+liking_means_post <- 
+master_long %>%
+  subset(pre_post=="post") %>%
+  group_by(musicality, pre_post) %>%
+  dplyr::summarize(liking = mean(liking, na.rm=TRUE)) %>%
+  drop_na()
+
+SE_liking_post <-
+  master_long %>%
+  subset(pre_post=="post") %>%
+  group_by(musicality, pre_post) %>%
+  dplyr::summarize(liking_sd = sd(liking, na.rm=TRUE)) %>%
+  drop_na() 
+
+SE_liking_post$freq <-table(master_long_post$liking)
+
+SE_liking_post$SE_liking <- (SE_liking_post$liking_sd)/(sqrt(SE_liking_post$freq))
+
+SE_liking_post <- merge(SE_liking_post, liking_means_post, by=c("musicality", "pre_post")) 
+
+
+SE_liking_pre <- merge(SE_liking_pre, liking_means_pre, by=c("musicality", "pre_post")) 
+
+SE_liking <- rbind(SE_liking_post, SE_liking_pre)
+
+names(SE_liking)[1]<-"index"
+SE_liking$lower_liking <- SE_liking$liking-SE_liking$SE_liking
+SE_liking$upper_liking <- SE_liking$liking+SE_liking$SE_liking
+
+SE <- merge(SE_liking, SE_musicality, by=c("index","pre_post"))
+
+#master_long <- merge(SE_musicality, master_long, by=c("pre_post", "liking"))
+
+
+
+ggplot(data=master_long, aes(x=musicality, y=liking, color=stim_type))+
+  #geom_jitter(width=0.2, alpha=0.3)+
+  stat_summary(fun.data  = 'mean_se', geom = 'errorbar', width = 0, alpha=0.5) +
+  stat_summary(fun.data = 'mean_se', geom = 'pointrange', alpha=0.5)+
+  theme_classic()+
+ # geom_errorbar(data=SE, aes(ymin = lower_liking, ymax = upper_liking), alpha=0.5,  height=0.2)+
+ #geom_errorbarh(data=SE, aes(xmin = lower, xmax = upper), alpha=0.5,  height=0.2) +
+  geom_smooth(method="lm") +
+  facet_grid(~pre_post) +
+  xlab("Musicality Rating") +
+  ylab("Liking Rating")
+
 ```
 
 ```{r}
@@ -259,7 +377,7 @@ liking_matchedprepost$group <- as.factor(liking_matchedprepost$group)
 contrasts(liking_matchedprepost$stim_type) <- c(-0.5,0.5)
 contrasts(liking_matchedprepost$group) <- c(0.5,-0.5)
 
-m1 <- lmer(data=liking_matchedprepost, scale(change) ~ stim_type*group + (stim_type + group|ResponseId) + (1|stim))
+m1 <- lmer(data=liking_matchedprepost, scale(change) ~ stim_type*group + (stim_type|ResponseId) + (1|stim),control=lmerControl(optimizer="bobyqa"))
 summary(m1)
 
 ggplot(data=liking_matchedprepost, aes(x=stim_type, y=value, color=group)) + 

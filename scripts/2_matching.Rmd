@@ -10,13 +10,15 @@ library(tidyverse)
 ```
 
 ```{r}
-master <- read.csv(file="../data/master.csv")
+master <- read.csv(file="../data/master.csv") 
+master_single <- read.csv(file="../data/master.csv") %>%
+  distinct(ResponseId, .keep_all = TRUE)
 ```
 
 
 ```{r}
-mean(ratings$PASS_noaud) + sd(ratings$PASS_noaud)
-quantile(ratings$eBMRQ_total, probs = c(.1), na.rm=TRUE)
+mean(master_single$PASS_noaud) + sd(master_single$PASS_noaud)
+quantile(master_single$eBMRQ_total, probs = c(.1), na.rm=TRUE)
 
 master %>% distinct(ResponseId, .keep_all = TRUE) %>%
   ggplot(aes(x=PASS_noaud, y=eBMRQ_total))+
@@ -29,20 +31,20 @@ master %>% distinct(ResponseId, .keep_all = TRUE) %>%
 
 
 general_hedonics <- 
-  master %>%
+  master_single %>%
   subset(PASS_noaud<16.84785)
 
 musical_anhedonics <- subset(general_hedonics, eBMRQ_total< 67)
 musical_anhedonics$group = "Anhedonic"
 
-hedonics <- subset(general_hedonics, eBMRQ_total > 69)
+hedonics <- subset(general_hedonics, eBMRQ_total > 67)
 hedonics$group = "Hedonic"
 
 potential_matchedcontrols <- rbind(musical_anhedonics, hedonics)
 
 potential_matchedcontrols$group = ifelse(potential_matchedcontrols$group == 'Anhedonic', 1, 0)
 potential_matchedcontrols$group <- as.factor(potential_matchedcontrols$group)
-matched <- MatchIt::matchit(group ~ Gold_perceptualabilities + PASS_noaud, data=potential_matchedcontrols, method='nearest', ratio=1)
+matched <- MatchIt::matchit(group ~ Gold_perceptualabilities + PASS_noaud + Gold_musicaltraining, data=potential_matchedcontrols, method='nearest', ratio=1)
 summary(matched)
 df.match <- MatchIt::match.data(matched)[1:ncol(potential_matchedcontrols)]
 
@@ -52,4 +54,14 @@ controls <- subset(df.match, group=="Matched Controls")
 anhedonics <- subset(df.match, group=="Musical Anhedonics")
 
 write.csv(df.match, file="../data/anhedonics_matchedcontrols.csv")
+
+df.matchlong <- master %>%
+  subset(ResponseId %in% df.match$ResponseId)
+
+df.matchlong <- df.match %>%
+  select(ResponseId, group) %>%
+  merge(df.matchlong, by= "ResponseId")
+
+write.csv(df.match, file="../data/anhedonics_matchedcontrols.csv")
+write.csv(df.matchlong, file="../data/anhedonics_matchedcontrolslong.csv")
 ```
