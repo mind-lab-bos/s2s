@@ -27,7 +27,8 @@ master %>% distinct(ResponseId, .keep_all = TRUE) %>%
   geom_vline(xintercept = 16.84785, linetype="dotted", color="red") +
   theme_classic() +
   xlab("PAS Scores (Sound Items Removed)") +
-  ylab("Total eBMRQ Scores")
+  ylab("Total eBMRQ Scores") 
+ # geom_point(data=df.match, aes(color=group)) 
 
 
 general_hedonics <- 
