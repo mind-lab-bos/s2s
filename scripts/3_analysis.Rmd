@@ -16,7 +16,7 @@ master <- read.csv(file='../data/master.csv')
 matched <- read.csv(file='../data/anhedonics_matchedcontrolslong.csv')
 ```
 
-#subsetting
+#cleaning
 ```{r}
 liking_master <- master %>%
   subset(rating=="liking")
@@ -40,6 +40,9 @@ liking_master_post <-
 liking_masterprepost <- merge(liking_master_pre, liking_master_post, by=c("ResponseId", "stim"))
 
 liking_masterprepost$change <- liking_masterprepost$post - liking_masterprepost$pre
+
+liking_matched <- matched %>%
+  subset(rating=="liking")
 
 liking_matched_pre <- matched %>%
   subset(rating=="liking") %>%
@@ -125,30 +128,15 @@ liking_master$liking <- liking_master$value
 master_long <- speech_master %>%
   select("ResponseId", "stim", "musicality") %>%
   merge(liking_master, by=c("ResponseId", "stim"))
-```
 
-#prelim analyses
-```{r}
-#did the s2s illusion work in entire sample?
+#setting contrasts correctly for analyses
 speech_master$stim_type <- as.factor(speech_master$stim_type)
 speech_master$pre_post <- as.factor(speech_master$pre_post)
 contrasts(speech_master$stim_type) <- c(-0.5,0.5)
 speech_master$pre_post <- factor(speech_master$pre_post, levels = c("pre", "post"))
 contrasts(speech_master$pre_post) <- c(-0.5,0.5)
 
-m1 <- lmer(data=speech_master, scale(value) ~ stim_type*pre_post + (stim_type*pre_post|ResponseId) + (1|stim), control=lmerControl(optimizer="bobyqa"))
-summary(m1)
-
-ggplot(data=speech_master, aes(x=pre_post, y=value, color=stim_type)) + 
- # ggdist::geom_dotsinterval() +
-  stat_summary(fun.data = 'mean_cl_normal', geom = 'errorbar', width = 0, alpha=0.5) +
-  stat_summary(fun.data = 'mean_cl_normal', geom = 'pointrange', alpha=0.5) +
-  theme_classic()+ 
- theme(legend.position = "none")+
-  ylab("Musicality Rating") +
-  xlab("Pre vs. Post Repetition")
-
-#did liking change as well?
+#for s2s + liking across sample
 liking_master$stim_type <- as.factor(liking_master$stim_type)
 liking_master$stim <- as.factor(liking_master$stim)
 liking_master$pre_post <- as.factor(liking_master$pre_post)
@@ -156,18 +144,639 @@ liking_master$pre_post <- factor(liking_master$pre_post, levels = c("pre", "post
 contrasts(liking_master$stim_type) <- c(-0.5,0.5)
 contrasts(liking_master$pre_post) <- c(-0.5,0.5)
 
+speech_matchedprepost$stim_type <- as.factor(speech_matchedprepost$stim_type)
+speech_matchedprepost$group <- as.factor(speech_matchedprepost$group)
+contrasts(speech_matchedprepost$stim_type) <- c(-0.5,0.5)
+contrasts(speech_matchedprepost$group) <- c(0.5,-0.5)
+speech_matched$pre_post <- factor(speech_matched$pre_post, levels = c("pre", "post"))
+speech_matched$stim_type <- as.factor(speech_matched$stim_type)
+speech_matched$group <- as.factor(speech_matched$group)
+contrasts(speech_matched$stim_type) <- c(-0.5,0.5)
+contrasts(speech_matched$group) <- c(0.5,-0.5)
+contrasts(speech_matched$pre_post) <- c(-0.5,0.5)
+
+#for musicality ~ liking ratings across entire sample
+master_long$stim <- as.factor(master_long$stim)
+master_long$pre_post <- as.factor(master_long$pre_post)
+master_long$pre_post <- factor(master_long$pre_post, levels = c("pre", "post"))
+contrasts(master_long$pre_post) <- c(-0.5,0.5)
+```
+
+#S2S across entire sample
+```{r}
+##to do: make cleaner plots (with consistency across how pre/post, stim type, and individ. diffs are portrayed).
+## also clean up/remove confusing plots in slide deck
+#did the s2s illusion work in entire sample?
+m1 <- lmer(data=speech_master, scale(value) ~ stim_type*pre_post + (stim_type*pre_post|ResponseId) + (1|stim), control=lmerControl(optimizer="bobyqa"))
+summary(m1)
+
+plot <- ggplot(data=speech_master, aes(x=pre_post, y=value, color=stim_type, group=interaction(ResponseId, stim))) + 
+ #ggdist::geom_dotsinterval() +
+  #stat_summary(fun.data = 'mean_cl_normal', geom = 'errorbar', width = 0, alpha=0.5) +
+  #stat_summary(fun.data = 'mean_cl_normal', geom = 'pointrange', alpha=0.5) +
+  theme_classic()+ 
+  geom_jitter(width=0.4,height=0.4,alpha=0.1) +
+  geom_line(alpha=0.05, color="black")+
+  #geom_point()+
+ theme(legend.position = "none")+
+  ylab("Musicality Rating") +
+  xlab("Pre vs. Post Repetition") +
+  facet_grid(~stim_type)
+
+ggsave(plot,file='../figures/prelim/musicalityraw_fullsample.png')
+
+#did liking change as well?
 m2 <- lmer(data=liking_master, scale(value) ~ stim_type*pre_post + (stim_type*pre_post|ResponseId) + (1|stim),control=lmerControl(optimizer="bobyqa"))
 summary(m2)
 
-ggplot(data=liking_master, aes(x=pre_post, y=value, color=stim_type)) + 
- # ggdist::geom_dotsinterval() +
+#plot <- 
+  ggplot(data=liking_master, aes(x=pre_post, y=value, color=stim_type)) + 
   stat_summary(fun.data = 'mean_cl_normal', geom = 'errorbar', width = 0, alpha=0.5) +
   stat_summary(fun.data = 'mean_cl_normal', geom = 'pointrange', alpha=0.5) +
   theme_classic()+ 
  theme(legend.position = "none")+
   ylab("Liking Rating") +
   xlab("Pre vs. Post Repetition")
+  
+ggsave(plot,file='../figures/prelim/likingraw_fullsample.png')
+```
 
+
+```{r}
+#are liking + musicality ratings linked? ## maybe test if this linkage relates to eBMRQ?
+m9 <- lmer(data=master_long, scale(liking) ~ scale(musicality)*pre_post + (scale(musicality)*pre_post|ResponseId) + (1|stim),control=lmerControl(optimizer="bobyqa"))
+summary(m9)
+
+test(emmeans::emtrends(m9, pairwise ~ pre_post, var = "musicality", lmer.df = "satterthwaite",lmerTest.limit = 65492))
+
+#plotting below, first making a df w/ means + SEs for liking + musicality per stimulus
+#getting liking SEs to plot below:
+#musicality
+musicality_means_pre <- 
+master_long %>%
+  subset(pre_post=="pre") %>%
+  group_by(stim, pre_post, stim_type) %>%
+  dplyr::summarize(musicality = mean(musicality, na.rm=TRUE)) %>%
+  drop_na()
+
+SE_musicality_pre <-
+  master_long %>%
+  subset(pre_post=="pre") %>%
+  group_by(stim, pre_post,stim_type) %>%
+  dplyr::summarize(musicality_sd = sd(musicality, na.rm=TRUE)) %>%
+  drop_na()
+
+master_long_pre <- master_long %>%
+  subset(pre_post=="pre") 
+
+SE_musicality_pre$freq <-table(master_long_pre$stim)
+
+SE_musicality_pre$SE_musicality <- (SE_musicality_pre$musicality_sd)/(sqrt(SE_musicality_pre$freq))
+
+musicality_means_post <- 
+master_long %>%
+  subset(pre_post=="post") %>%
+  group_by(stim, pre_post,stim_type) %>%
+  dplyr::summarize(musicality = mean(musicality, na.rm=TRUE)) %>%
+  drop_na() 
+
+SE_musicality_post <-
+  master_long %>%
+  subset(pre_post=="post") %>%
+  group_by(stim, pre_post,stim_type) %>%
+  dplyr::summarize(musicality_sd = sd(musicality, na.rm=TRUE)) %>%
+  drop_na() 
+
+master_long_post <- master_long %>%
+  subset(pre_post=="post") 
+
+SE_musicality_post$freq <-table(master_long_post$stim)
+
+SE_musicality_post$SE_musicality <- (SE_musicality_post$musicality_sd)/(sqrt(SE_musicality_post$freq))
+
+SE_musicality_post <- merge(SE_musicality_post, musicality_means_post, by=c("stim", "pre_post"))
+
+SE_musicality_pre <- merge(SE_musicality_pre, musicality_means_pre, by=c("stim", "pre_post"))
+
+SE_musicality <- rbind(SE_musicality_post, SE_musicality_pre)
+
+SE_musicality$lower <- SE_musicality$musicality-SE_musicality$SE_musicality
+SE_musicality$upper <- SE_musicality$musicality+SE_musicality$SE_musicality
+
+#liking
+liking_means_pre <- 
+master_long %>%
+  subset(pre_post=="pre") %>%
+  group_by(stim, pre_post,stim_type) %>%
+  dplyr::summarize(liking = mean(liking, na.rm=TRUE)) %>%
+  drop_na() 
+
+SE_liking_pre <-
+  master_long %>%
+  subset(pre_post=="pre") %>%
+  group_by(stim, pre_post,stim_type) %>%
+  dplyr::summarize(liking_sd = sd(liking, na.rm=TRUE)) %>%
+  drop_na()
+
+SE_liking_pre$freq <-table(master_long_pre$stim)
+
+SE_liking_pre$SE_liking <- (SE_liking_pre$liking_sd)/(sqrt(SE_liking_pre$freq))
+
+liking_means_post <- 
+master_long %>%
+  subset(pre_post=="post") %>%
+  group_by(stim, pre_post,stim_type) %>%
+  dplyr::summarize(liking = mean(liking, na.rm=TRUE)) %>%
+  drop_na()
+
+SE_liking_post <-
+  master_long %>%
+  subset(pre_post=="post") %>%
+  group_by(stim, pre_post,stim_type) %>%
+  dplyr::summarize(liking_sd = sd(liking, na.rm=TRUE)) %>%
+  drop_na() 
+
+SE_liking_post$freq <-table(master_long_post$stim)
+
+SE_liking_post$SE_liking <- (SE_liking_post$liking_sd)/(sqrt(SE_liking_post$freq))
+
+SE_liking_post <- merge(SE_liking_post, liking_means_post, by=c("stim", "pre_post")) 
+
+
+SE_liking_pre <- merge(SE_liking_pre, liking_means_pre, by=c("stim", "pre_post")) 
+
+SE_liking <- rbind(SE_liking_post, SE_liking_pre)
+
+SE_liking$lower_liking <- SE_liking$liking-SE_liking$SE_liking
+SE_liking$upper_liking <- SE_liking$liking+SE_liking$SE_liking
+
+SE <- merge(SE_liking, SE_musicality, by=c("stim","pre_post"))
+SE$pre_post <- factor(SE$pre_post, levels = c("pre", "post"))
+
+#adding model predictions
+newdata <- expand.grid(
+  musicality =seq(1,10,0.1),
+  pre_post = c("pre", "post"),
+  liking= seq(1, 10, 0.1)
+)
+
+newdata$pre_post <- as.factor(newdata$pre_post)
+newdata$pre_post <- factor(newdata$pre_post, levels = c("pre", "post"))
+contrasts(newdata$pre_post) <- c(-0.5,0.5)
+
+predictions<- AICcmodavg::predictSE(m9,newdata, se.fit = TRUE, print.matrix =
+        TRUE, level = 0)
+
+pred2a <- cbind(newdata, predictions)
+
+
+#unscaling BMRQ
+pred2a$musicality <- pred2a$musicality_scaled * attr(master_long$musicality_scaled, 'scaled:scale') + attr(master_long$musicality_scaled, 'scaled:center')
+
+#unscaling predictions + adding upper/lower SE
+pred2a$liking <- pred2a$fit * attr(master_long$liking_scaled, 'scaled:scale') + attr(master_long$liking_scaled, 'scaled:center')
+pred2a$upper <- (pred2a$fit + pred2a$se.fit) * attr(master_long$liking_scaled, 'scaled:scale') + attr(master_long$liking_scaled, 'scaled:center')
+pred2a$lower <- (pred2a$fit - pred2a$se.fit) * attr(master_long$liking_scaled, 'scaled:scale') + attr(master_long$liking_scaled, 'scaled:center')
+
+
+ggplot(data=SE, aes(x=musicality, y=liking))+
+  geom_point()+
+  #stat_summary(fun.data  = 'mean_se', geom = 'errorbar', width = 0, alpha=0.5) +
+  #stat_summary(fun.data = 'mean_se', geom = 'pointrange', alpha=0.5)+
+  theme_classic()+
+ geom_errorbar(data=SE, aes(ymin = lower_liking, ymax = upper_liking), alpha=0.5, width=0)+
+ geom_errorbarh(data=SE, aes(xmin = lower, xmax = upper), alpha=0.5,  height=0) +
+  geom_line(data=pred2a, color="black") +
+  geom_ribbon(data=pred2a, aes(ymin=upper, ymax=lower),alpha=0.2)  +
+  facet_grid(~pre_post) +
+  xlab("Musicality Rating") +
+  ylab("Liking Rating") +
+  coord_cartesian(ylim=c(4.25, 6.5), xlim=c(1,6))
+```
+
+```{r}
+#how about for anhedonics? --> creating a delta rating to avoid 3-way interaction
+#speech
+m1 <- lmer(data=speech_matchedprepost, scale(change) ~ stim_type*group + (stim_type + group|ResponseId) + (1|stim),control=lmerControl(optimizer="bobyqa"))
+summary(m1)
+
+m1a <- lmer(data=speech_matched, scale(value) ~ stim_type*group + (1|ResponseId) + (1|stim),control=lmerControl(optimizer="bobyqa"))
+summary(m1a)
+
+m1b <- lmer(data=speech_matched, scale(value) ~ group*pre_post + (1|ResponseId) + (1|stim),control=lmerControl(optimizer="bobyqa"))
+summary(m1b)
+
+#plotting change
+#plot <- 
+ggplot(data=speech_matchedprepost, aes(x=stim_type, y=change, color=group))+ 
+ # ggdist::geom_dotsinterval() +
+  stat_summary(fun.data = 'mean_cl_normal', geom = 'errorbar', width = 0, alpha=0.5) +
+  stat_summary(fun.data = 'mean_cl_normal', geom = 'pointrange', alpha=0.5) +
+  theme_classic()+ 
+  #geom_jitter(width=0.2,height=0.2,alpha=0.2) +
+  #geom_line(alpha=0.05, color="black")+
+  theme(legend.position = "none")+
+  xlab("Stimulus Type") +
+  ylab("Change in Musicality Rating after Repetition") +
+  scale_color_manual(values=c("#56B4E9", "#E69F00" )) +
+  scale_fill_manual(values=c("#56B4E9","#E69F00")) 
+ggsave(plot,file='../figures/prelim/musicality_MAMC.png')
+
+#three-way interaction plot
+ggplot(data=speech_matched, aes(x=stim_type, y=value, color=group))+ 
+ # ggdist::geom_dotsinterval() +
+  stat_summary(fun.data = 'mean_cl_normal', geom = 'errorbar', width = 0, alpha=0.5) +
+  stat_summary(fun.data = 'mean_cl_normal', geom = 'pointrange', alpha=0.5) +
+  theme_classic()+ 
+  #geom_jitter(width=0.2,height=0.2,alpha=0.2) +
+  #geom_line(alpha=0.05, color="black")+
+  theme(legend.position = "none")+
+  xlab("Stimulus Type") +
+  ylab("Musicality Rating") +
+  scale_color_manual(values=c("#56B4E9", "#E69F00" )) +
+  scale_fill_manual(values=c("#56B4E9","#E69F00")) +
+  facet_grid(~pre_post)
+
+#plotting raw
+#plot <- 
+  ggplot(data=speech_matched, aes(x=pre_post, y=value, color=stim_type)) + 
+ #ggdist::geom_dotsinterval() +
+  stat_summary(fun.data = 'mean_cl_normal', geom = 'errorbar', width = 0, alpha=0.5) +
+  stat_summary(fun.data = 'mean_cl_normal', geom = 'pointrange', alpha=0.5) +
+  theme_classic()+ 
+  #geom_jitter(width=0.4,height=0.4,alpha=0.1) +
+  #geom_line(alpha=0.05, color="black")+
+  #geom_point()+
+ theme(legend.position = "none")+
+  ylab("Musicality Rating") +
+  xlab("Pre vs. Post Repetition") +
+  facet_grid(~group)
+  #scale_color_manual(values=c("#56B4E9", "#E69F00" )) +
+  #scale_fill_manual(values=c("#56B4E9","#E69F00"))
+
+ggsave(plot,file='../figures/prelim/musicalityraw_fullsample.png')
+
+
+#liking
+liking_matchedprepost$stim_type <- as.factor(liking_matchedprepost$stim_type)
+liking_matchedprepost$group <- as.factor(liking_matchedprepost$group)
+contrasts(liking_matchedprepost$stim_type) <- c(-0.5,0.5)
+contrasts(liking_matchedprepost$group) <- c(0.5,-0.5)
+liking_matched$pre_post <- factor(liking_matched$pre_post, levels = c("pre", "post"))
+liking_matched$stim_type <- as.factor(liking_matchedprepost$stim_type)
+liking_matched$group <- as.factor(liking_matchedprepost$group)
+contrasts(liking_matched$stim_type) <- c(-0.5,0.5)
+contrasts(liking_matched$group) <- c(0.5,-0.5)
+contrasts(liking_matched$pre_post) <- c(-0.5,0.5)
+
+
+m1 <- lmer(data=liking_matchedprepost, scale(change) ~ stim_type*group + (stim_type|ResponseId) + (1|stim),control=lmerControl(optimizer="bobyqa"))
+summary(m1)
+
+m1a <- lmer(data=liking_matched, scale(value) ~ stim_type*group + (stim_type*group|ResponseId) + (1|stim),control=lmerControl(optimizer="bobyqa"))
+summary(m1a)
+
+m1b <- lmer(data=liking_matched, scale(value) ~ group*pre_post + (1|ResponseId) + (1|stim),control=lmerControl(optimizer="bobyqa"))
+summary(m1b)
+
+plot <- 
+ggplot(data=liking_matched, aes(x=pre_post, y=value, color=stim_type, group=interaction(ResponseId, stim)))+ 
+ # ggdist::geom_dotsinterval() +
+  #stat_summary(fun.data = 'mean_cl_normal', geom = 'errorbar', width = 0, alpha=0.5) +
+  #stat_summary(fun.data = 'mean_cl_normal', geom = 'pointrange', alpha=0.5) +
+  theme_classic()+ 
+  geom_jitter(width=0.2,height=0.2,alpha=0.2) +
+  geom_line(alpha=0.05, color="black")+
+  theme(legend.position = "none")+
+  xlab("Pre/Post Repetition") +
+  ylab("Liking Rating") +
+ # scale_color_manual(values=c("#56B4E9", "#E69F00" )) +
+ # scale_fill_manual(values=c("#56B4E9","#E69F00")) +
+  facet_grid(~group)
+
+ggsave(plot,file='../figures/prelim/likingraw_MAMC.png')
+
+#plotting three-way interaction
+ggplot(data=liking_matched, aes(x=stim_type, y=value, color=group))+ 
+ # ggdist::geom_dotsinterval() +
+  stat_summary(fun.data = 'mean_cl_normal', geom = 'errorbar', width = 0, alpha=0.5) +
+  stat_summary(fun.data = 'mean_cl_normal', geom = 'pointrange', alpha=0.5) +
+  theme_classic()+
+  theme(legend.position = "none")+
+  xlab("Stimulus Type") +
+  ylab("Liking Rating") +
+ scale_color_manual(values=c("#56B4E9", "#E69F00" )) +
+ scale_fill_manual(values=c("#56B4E9","#E69F00")) +
+  facet_grid(~pre_post)
+
+
+
+#plotting raw
+ggplot(data=liking_matched, aes(x=pre_post, y=value, color=stim_type)) + 
+ #ggdist::geom_dotsinterval() +
+  stat_summary(fun.data = 'mean_cl_normal', geom = 'errorbar', width = 0, alpha=0.5) +
+  stat_summary(fun.data = 'mean_cl_normal', geom = 'pointrange', alpha=0.5) +
+  theme_classic()+ 
+  #geom_jitter(width=0.4,height=0.4,alpha=0.1) +
+  #geom_line(alpha=0.05, color="black")+
+  #geom_point()+
+ theme(legend.position = "none")+
+  ylab("Liking Rating") +
+  xlab("Pre vs. Post Repetition") +
+  facet_grid(~group)
+  #scale_color_manual(values=c("#56B4E9", "#E69F00" )) +
+  #scale_fill_manual(values=c("#56B4E9","#E69F00"))
+
+cor.test(liking_matchedprepost$change, speech_matchedprepost$change)
+
+#plotting average post musicality ratings per group per stimulus
+plot<-
+  ggplot(data=speech_matchedprepost, aes(x=stim, y=post, color=group)) + 
+ #ggdist::geom_dotsinterval() +
+  stat_summary(fun.data = 'mean_cl_normal', geom = 'errorbar', width = 0, alpha=0.5) +
+  stat_summary(fun.data = 'mean_cl_normal', geom = 'pointrange', alpha=0.5) +
+  theme_classic()+ 
+  #geom_jitter(width=0.4,height=0.4,alpha=0.1) +
+  #geom_line(alpha=0.05, color="black")+
+  #geom_point()+
+ theme(legend.position = "none")+
+  ylab("Post-Repetition Musicality Rating") +
+  xlab("Stimulus") +
+  scale_color_manual(values=c("#56B4E9", "#E69F00" )) +
+  scale_fill_manual(values=c("#56B4E9","#E69F00")) +
+ scale_x_continuous(breaks = speech_matchedprepost$stim) +
+  theme(
+    axis.text.x = element_text(family="Arial", size=12),
+    axis.title.x = element_text(family="Arial", size=12),
+    axis.title.y = element_text(family="Arial", size=12))
+ggsave(plot,file='../figures/prelim/musicalityperstim_MAMC.png', width=14)
+
+plot<-
+  ggplot(data=liking_matchedprepost, aes(x=stim, y=post, color=group)) + 
+ #ggdist::geom_dotsinterval() +
+  stat_summary(fun.data = 'mean_cl_normal', geom = 'errorbar', width = 0, alpha=0.5) +
+  stat_summary(fun.data = 'mean_cl_normal', geom = 'pointrange', alpha=0.5) +
+  theme_classic()+ 
+  #geom_jitter(width=0.4,height=0.4,alpha=0.1) +
+  #geom_line(alpha=0.05, color="black")+
+  #geom_point()+
+ theme(legend.position = "none")+
+  ylab("Post-Repetition Liking Rating") +
+  xlab("Stimulus") +
+  scale_color_manual(values=c("#56B4E9", "#E69F00" )) +
+  scale_fill_manual(values=c("#56B4E9","#E69F00")) +
+ scale_x_continuous(breaks = speech_matchedprepost$stim) +
+  theme(
+    axis.text.x = element_text(family="Arial", size=12),
+    axis.title.x = element_text(family="Arial", size=12),
+    axis.title.y = element_text(family="Arial", size=12))
+ggsave(plot,file='../figures/prelim/perstim_MAMC.png', width=14)
+
+#yanny v laurel hearers
+m10 <- lmer(data=speech_master, scale(value) ~ Q409*pre_post + (Q409*pre_post|ResponseId) + (1|stim), control=lmerControl(optimizer="bobyqa"))
+summary(m10)
+
+plot <-
+  ggplot(data=speech_master, aes(x=pre_post, y=value, color=Q409)) + 
+ #ggdist::geom_dotsinterval() +
+  stat_summary(fun.data = 'mean_cl_normal', geom = 'errorbar', width = 0, alpha=0.5) +
+  stat_summary(fun.data = 'mean_cl_normal', geom = 'pointrange', alpha=0.5) +
+  theme_classic()+ 
+  #geom_jitter(width=0.4,height=0.4,alpha=0.1) +
+  #geom_line(alpha=0.05, color="black")+
+  #geom_point()+
+ #theme(legend.position = "none")+
+  ylab("Musicality Rating") +
+  xlab("Pre/Post Repetition") +
+  theme(
+    axis.text.x = element_text(family="Arial", size=12),
+    axis.title.x = element_text(family="Arial", size=12),
+    axis.title.y = element_text(family="Arial", size=12))
+
+ggsave(plot,file='../figures/prelim/LY_speechprepost.png')
+
+
+m11 <- lmer(data=liking_master, scale(value) ~ Q409*pre_post + (Q409*pre_post|ResponseId) + (1|stim), control=lmerControl(optimizer="bobyqa"))
+summary(m11)
+
+ggplot(data=liking_master, aes(x=pre_post, y=value, color=Q409)) + 
+ #ggdist::geom_dotsinterval() +
+  stat_summary(fun.data = 'mean_cl_normal', geom = 'errorbar', width = 0, alpha=0.5) +
+  stat_summary(fun.data = 'mean_cl_normal', geom = 'pointrange', alpha=0.5) +
+  theme_classic()+ 
+  #geom_jitter(width=0.4,height=0.4,alpha=0.1) +
+  #geom_line(alpha=0.05, color="black")+
+  #geom_point()+
+ #theme(legend.position = "none")+
+  ylab("Liking Rating") +
+  xlab("Pre/Post Repetition") +
+  theme(
+    axis.text.x = element_text(family="Arial", size=12),
+    axis.title.x = element_text(family="Arial", size=12),
+    axis.title.y = element_text(family="Arial", size=12))
+
+
+check <- 
+  speech_master %>%
+  distinct(Q409,ResponseId)
+table(check$Q409)
+ggplot(data=liking_master, aes(x=pre_post, y=value, color=Q409)) + 
+ #ggdist::geom_dotsinterval() +
+  stat_summary(fun.data = 'mean_cl_normal', geom = 'errorbar', width = 0, alpha=0.5) +
+  stat_summary(fun.data = 'mean_cl_normal', geom = 'pointrange', alpha=0.5) +
+  theme_classic()+ 
+  #geom_jitter(width=0.4,height=0.4,alpha=0.1) +
+  #geom_line(alpha=0.05, color="black")+
+  #geom_point()+
+ #theme(legend.position = "none")+
+  ylab("Liking Rating") +
+  xlab("Pre/Post Repetition") +
+  theme(
+    axis.text.x = element_text(family="Arial", size=12),
+    axis.title.x = element_text(family="Arial", size=12),
+    axis.title.y = element_text(family="Arial", size=12))
+
+#checking illusion v control, laurel v yanny - post
+speech_master_post <- speech_master %>%
+  subset(pre_post == "post")
+
+m12 <- lmer(data=speech_master_post, scale(value) ~ Q409*stim_type + (Q409*stim_type|ResponseId), control=lmerControl(optimizer="bobyqa"))
+summary(m12)
+
+plot <- 
+ggplot(data=speech_master_post, aes(x=stim_type, y=value, color=Q409)) + 
+ #ggdist::geom_dotsinterval() +
+  stat_summary(fun.data = 'mean_cl_normal', geom = 'errorbar', width = 0, alpha=0.5) +
+  stat_summary(fun.data = 'mean_cl_normal', geom = 'pointrange', alpha=0.5) +
+  theme_classic()+ 
+  #geom_jitter(width=0.4,height=0.4,alpha=0.1) +
+  #geom_line(alpha=0.05, color="black")+
+  #geom_point()+
+ #theme(legend.position = "none")+
+  ylab("Post Musicality Rating") +
+  xlab("Stimulus Type") +
+  theme(
+    axis.text.x = element_text(family="Arial", size=12),
+    axis.title.x = element_text(family="Arial", size=12),
+    axis.title.y = element_text(family="Arial", size=12))
+
+ggsave(plot,file='../figures/prelim/LY_musicalitypoststim.png')
+
+
+plot <- 
+ggplot(data=speech_master, aes(x=pre_post, y=value, color=stim_type)) + 
+ #ggdist::geom_dotsinterval() +
+  stat_summary(fun.data = 'mean_cl_normal', geom = 'errorbar', width = 0, alpha=0.5) +
+  stat_summary(fun.data = 'mean_cl_normal', geom = 'pointrange', alpha=0.5) +
+  theme_classic()+ 
+  #geom_jitter(width=0.4,height=0.4,alpha=0.1) +
+  #geom_line(alpha=0.05, color="black")+
+  #geom_point()+
+ #theme(legend.position = "none")+
+  ylab("Musicality Rating") +
+  xlab("Pre/Post Repetition") +
+  theme(
+    axis.text.x = element_text(family="Arial", size=12),
+    axis.title.x = element_text(family="Arial", size=12),
+    axis.title.y = element_text(family="Arial", size=12)) +
+  facet_grid(~Q409)
+
+ggsave(plot,file='../figures/prelim/LY_musicalityprepost.png', width=9)
+
+ggplot(data=speech_master, aes(x=pre_post, y=value, color=stim_type)) + 
+ #ggdist::geom_dotsinterval() +
+  #stat_summary(fun.data = 'mean_cl_normal', geom = 'errorbar', width = 0, alpha=0.5) +
+  #stat_summary(fun.data = 'mean_cl_normal', geom = 'pointrange', alpha=0.5) +
+  theme_classic()+ 
+  geom_jitter(width=0.4,height=0.4,alpha=0.1) +
+  #geom_line(alpha=0.05, color="black")+
+  #geom_point()+
+ #theme(legend.position = "none")+
+  ylab("Musicality Rating") +
+  xlab("Pre/Post Repetition") +
+  theme(
+    axis.text.x = element_text(family="Arial", size=12),
+    axis.title.x = element_text(family="Arial", size=12),
+    axis.title.y = element_text(family="Arial", size=12)) +
+  facet_grid(~Q409)
+
+
+musicality_averages <-
+  speech_master %>%
+  group_by(pre_post,stim_type, ResponseId) %>%
+  dplyr::summarize(musicality = mean(musicality, na.rm=TRUE)) %>%
+  drop_na()
+
+musicality_sd <-
+  speech_master %>%
+  group_by(pre_post,stim_type, ResponseId) %>%
+  dplyr::summarize(musicality_sd = sd(musicality, na.rm=TRUE)) %>%
+  drop_na()
+
+
+musicality_sd$SE_liking <- (musicality_sd$musicality_sd)/(sqrt(24))
+
+SE_liking_post <- merge(SE_liking_post, liking_means_post, by=c("stim", "pre_post"))
+```
+
+#testing beta coefs
+```{r}
+#musicality
+betas_musicality <- coef(m1)$ResponseId %>% 
+    rownames_to_column()
+
+colnames(betas_musicality) <- c("ResponseId", "Intercept_musicality", "stim_type_musicality", "pre_post_musicality", "pre_postXstim_type_musicality")
+
+participant_BMRQs <- unique(dplyr::select(master, c("ResponseId", "eBMRQ_total", "BMRQ_sensorimotor", "BMRQ_moodreg", "BMRQ_emotion", "BMRQ_musicseek", "BMRQ_socialreward", "BMRQ_absorption", "AIMS_total")))
+
+betas_merged <- merge(betas_musicality, participant_BMRQs, on="ResponseId")
+
+model1 <- lm(data=betas_merged, scale(pre_post_musicality) ~ scale(eBMRQ_total))
+summary(model1)
+
+model2 <- lm(data=betas_merged, scale(stim_type_musicality) ~ scale(eBMRQ_total))
+summary(model2)
+
+model3 <- lm(data=betas_merged, scale(pre_postXstim_type_musicality) ~ scale(eBMRQ_total))
+summary(model3)
+
+#liking
+betas_liking <- coef(m2)$ResponseId %>% 
+    rownames_to_column()
+
+colnames(betas_liking) <- c("ResponseId", "Intercept_liking", "stim_type_liking", "pre_post_liking", "pre_postXstim_type_liking")
+
+betas_merged <- merge(betas_liking, betas_merged, on="ID")
+
+model1 <- lm(data=betas_merged, scale(pre_post_liking) ~ scale(eBMRQ_total))
+summary(model1)
+
+model2 <- lm(data=betas_merged, scale(stim_type_liking) ~ scale(eBMRQ_total))
+summary(model2)
+
+model3 <- lm(data=betas_merged, scale(pre_postXstim_type_liking) ~ scale(eBMRQ_total))
+summary(model3)
+
+#are liking + musicality effects related?
+model1 <- lm(data=betas_merged, scale(pre_post_liking) ~ scale(pre_post_musicality))
+summary(model1)
+
+model2 <- lm(data=betas_merged, scale(stim_type_liking) ~ scale(stim_type_musicality))
+summary(model2)
+
+model3 <- lm(data=betas_merged, scale(pre_postXstim_type_liking) ~ scale(pre_postXstim_type_musicality))
+summary(model3)
+
+#plotting
+#eBMRQ + effect of repetition --> how to deal w/ outliers?
+ggplot(data=betas_merged, aes(x=pre_post_musicality, y=eBMRQ_total)) +
+  geom_point()+
+  stat_smooth(method="lm") +
+  ylab("Total eBMRQ Score") +
+  xlab("Estimated Effect of Repetition on Musicality Ratings") +
+  theme_classic()
+
+ggplot(data=betas_merged, aes(x=stim_type_musicality, y=eBMRQ_total)) +
+  geom_point()+
+  stat_smooth(method="lm") +
+  ylab("Total eBMRQ Score") +
+  xlab("Estimated Effect of Stimulus Type on Musicality Ratings") +
+  theme_classic()
+
+ggplot(data=betas_merged, aes(x=pre_postXstim_type_musicality, y=eBMRQ_total)) +
+  geom_point()+
+  stat_smooth(method="lm") +
+  ylab("Total eBMRQ Score") +
+  xlab("Estimated Repetition X Stimulus Type Interaction on Musicality Ratings") +
+  theme_classic()
+
+#still need to do liking ratings + both w/ AIMS scores, though currently all are n.s.
+
+#relationship between effects
+ggplot(data=betas_merged, aes(x=pre_post_musicality, y=pre_post_liking)) +
+  geom_point()+
+  stat_smooth(method="lm") +
+  ylab("Estimated Effect of Repetition on\nLiking Ratings") +
+  xlab("Estimated Effect of Repetition on Musicality Ratings") +
+  theme_classic()
+
+ggplot(data=betas_merged, aes(x=stim_type_musicality, y=stim_type_liking)) +
+  geom_point()+
+  stat_smooth(method="lm") +
+  ylab("Estimated Effect of Stimulus Type on\nLiking Ratings") +
+  xlab("Estimated Effect of Stimulus Type on Musicality Ratings") +
+  theme_classic()
+
+ggplot(data=betas_merged, aes(x=pre_postXstim_type_musicality, y=pre_postXstim_type_liking)) +
+  geom_point()+
+  stat_smooth(method="lm") +
+  ylab("Estimated Repetition X Stimulus Type\nInteraction on Liking Ratings") +
+  xlab("Estimated Repetition X Stimulus Type Interaction on Musicality Ratings") +
+  theme_classic()
+
+```
+#individual differences
+```{r}
 #did musicality ratings differ by eBMRQ scores?
 speech_masterprepost$stim_type <- as.factor(speech_masterprepost$stim_type)
 contrasts(speech_masterprepost$stim_type) <- c(-0.5,0.5)
@@ -193,32 +802,13 @@ ggplot(data=speech_masterprepost, aes(x=AIMS_total, y=change))+
   geom_smooth(method="lm") +
   facet_grid(~stim_type) +
   xlab("Total AIMS Score") +
-  ylab("Change (Post - Pre) in Musicality Scores")
+  ylab("Change (Post - Pre) in Musicality Scores") 
 
 emmeans::emtrends(m5, pairwise ~ stim_type, var = "AIMS_total", lmer.df = "satterthwaite",lmerTest.limit = 16416)
 
 #did liking ratings differ by AIMS scores?
 m6 <- lmer(data=liking_masterprepost, scale(change) ~ stim_type*scale(AIMS_total) + (stim_type*scale(AIMS_total)|ResponseId) + (1|stim),control=lmerControl(optimizer="bobyqa"))
 summary(m6)
-
-#are liking + musicality ratings linked?
-#pre
-m7 <- lmer(data=master_prepost, scale(liking_pre) ~ scale(musicality_pre)*stim_type + (scale(musicality_pre)*stim_type|ResponseId) + (1|stim),control=lmerControl(optimizer="bobyqa"))
-summary(m7)
-
-#post
-m8 <- lmer(data=master_prepost, scale(liking_post) ~ scale(musicality_post)*stim_type + (scale(musicality_post)*stim_type|ResponseId) + (1|stim),control=lmerControl(optimizer="bobyqa"))
-summary(m8)
-
-#is the difference btn pre-post sig?
-master_long$stim <- as.factor(master_long$stim)
-master_long$pre_post <- as.factor(master_long$pre_post)
-master_long$pre_post <- factor(master_long$pre_post, levels = c("pre", "post"))
-contrasts(master_long$pre_post) <- c(-0.5,0.5)
-m9 <- lmer(data=master_long, scale(liking) ~ scale(musicality)*pre_post + (scale(musicality)*pre_post|ResponseId) + (1|stim),control=lmerControl(optimizer="bobyqa"))
-summary(m9)
-
-test(emmeans::emtrends(m9, pairwise ~ pre_post, var = "musicality", lmer.df = "satterthwaite",lmerTest.limit = 65492))
 
 
 #change
@@ -229,184 +819,4 @@ summary(m10)
 cor.test(master_long$change, master_long$change)
 
 #check "illusion strength" (average effect of control vs average effect of illusion) (check ani paper w/ adam)
-#add stim type interactions for the musicality + liking ratings 
-#pull out betas from participant level
-```
-
-#misc plots
-```{r}
-#getting liking SEs to plot below:
-#musicality
-musicality_means_pre <- 
-master_long %>%
-  subset(pre_post=="pre") %>%
-  group_by(liking, pre_post) %>%
-  dplyr::summarize(musicality = mean(musicality, na.rm=TRUE)) %>%
-  drop_na()
-
-SE_musicality_pre <-
-  master_long %>%
-  subset(pre_post=="pre") %>%
-  group_by(liking, pre_post) %>%
-  dplyr::summarize(musicality_sd = sd(musicality, na.rm=TRUE)) %>%
-  drop_na()
-
-master_long_pre <- master_long %>%
-  subset(pre_post=="pre") 
-
-SE_musicality_pre$freq <-table(master_long_pre$musicality)
-
-SE_musicality_pre$SE_musicality <- (SE_musicality_pre$musicality_sd)/(sqrt(SE_musicality_pre$freq))
-
-musicality_means_post <- 
-master_long %>%
-  subset(pre_post=="post") %>%
-  #group_by(musicality, pre_post) %>%
-  dplyr::summarize(musicality = mean(musicality, na.rm=TRUE)) %>%
-  drop_na() 
-
-SE_musicality_post <-
-  master_long %>%
-  subset(pre_post=="post") %>%
-  group_by(liking, pre_post) %>%
-  dplyr::summarize(musicality_sd = sd(musicality, na.rm=TRUE)) %>%
-  drop_na() 
-
-master_long_post <- master_long %>%
-  subset(pre_post=="post") 
-
-SE_musicality_post$freq <-table(master_long_post$musicality)
-
-SE_musicality_post$SE_musicality <- (SE_musicality_post$musicality_sd)/(sqrt(SE_musicality_post$freq))
-
-SE_musicality_post <- merge(SE_musicality_post, musicality_means_post, by=c("liking", "pre_post"))
-
-SE_musicality_pre <- merge(SE_musicality_pre, musicality_means_pre, by=c("liking", "pre_post"))
-
-SE_musicality <- rbind(SE_musicality_post, SE_musicality_pre)
-
-names(SE_musicality)[1]<-"index"
-
-SE_musicality$lower <- SE_musicality$musicality-SE_musicality$SE_musicality
-SE_musicality$upper <- SE_musicality$musicality+SE_musicality$SE_musicality
-
-#liking
-liking_means_pre <- 
-master_long %>%
-  subset(pre_post=="pre") %>%
-  group_by(musicality, pre_post) %>%
-  dplyr::summarize(liking = mean(liking, na.rm=TRUE)) %>%
-  drop_na() 
-
-SE_liking_pre <-
-  master_long %>%
-  subset(pre_post=="pre") %>%
-  group_by(musicality, pre_post) %>%
-  dplyr::summarize(liking_sd = sd(liking, na.rm=TRUE)) %>%
-  drop_na()
-
-SE_liking_pre$freq <-table(master_long_pre$liking)
-
-SE_liking_pre$SE_liking <- (SE_liking_pre$liking_sd)/(sqrt(SE_liking_pre$freq))
-
-liking_means_post <- 
-master_long %>%
-  subset(pre_post=="post") %>%
-  group_by(musicality, pre_post) %>%
-  dplyr::summarize(liking = mean(liking, na.rm=TRUE)) %>%
-  drop_na()
-
-SE_liking_post <-
-  master_long %>%
-  subset(pre_post=="post") %>%
-  group_by(musicality, pre_post) %>%
-  dplyr::summarize(liking_sd = sd(liking, na.rm=TRUE)) %>%
-  drop_na() 
-
-SE_liking_post$freq <-table(master_long_post$liking)
-
-SE_liking_post$SE_liking <- (SE_liking_post$liking_sd)/(sqrt(SE_liking_post$freq))
-
-SE_liking_post <- merge(SE_liking_post, liking_means_post, by=c("musicality", "pre_post")) 
-
-
-SE_liking_pre <- merge(SE_liking_pre, liking_means_pre, by=c("musicality", "pre_post")) 
-
-SE_liking <- rbind(SE_liking_post, SE_liking_pre)
-
-names(SE_liking)[1]<-"index"
-SE_liking$lower_liking <- SE_liking$liking-SE_liking$SE_liking
-SE_liking$upper_liking <- SE_liking$liking+SE_liking$SE_liking
-
-SE <- merge(SE_liking, SE_musicality, by=c("index","pre_post"))
-
-#master_long <- merge(SE_musicality, master_long, by=c("pre_post", "liking"))
-
-
-
-ggplot(data=master_long, aes(x=musicality, y=liking, color=stim_type))+
-  #geom_jitter(width=0.2, alpha=0.3)+
-  stat_summary(fun.data  = 'mean_se', geom = 'errorbar', width = 0, alpha=0.5) +
-  stat_summary(fun.data = 'mean_se', geom = 'pointrange', alpha=0.5)+
-  theme_classic()+
- # geom_errorbar(data=SE, aes(ymin = lower_liking, ymax = upper_liking), alpha=0.5,  height=0.2)+
- #geom_errorbarh(data=SE, aes(xmin = lower, xmax = upper), alpha=0.5,  height=0.2) +
-  geom_smooth(method="lm") +
-  facet_grid(~pre_post) +
-  xlab("Musicality Rating") +
-  ylab("Liking Rating")
-
-
-ggplot(data=master_long, aes(x=musicality, y=liking, color=stim_type))+
-  #geom_jitter(width=0.2, alpha=0.3)+
-  stat_summary(fun.data  = 'mean_se', geom = 'errorbar', width = 0, alpha=0.5) +
-  stat_summary(fun.data = 'mean_se', geom = 'pointrange', alpha=0.5)+
-  theme_classic()+
- # geom_errorbar(data=SE, aes(ymin = lower_liking, ymax = upper_liking), alpha=0.5,  height=0.2)+
- #geom_errorbarh(data=SE, aes(xmin = lower, xmax = upper), alpha=0.5,  height=0.2) +
-  geom_smooth(method="lm") +
-  facet_grid(~pre_post) +
-  xlab("Musicality Rating") +
-  ylab("Liking Rating")
-```
-
-```{r}
-#how about for anhedonics? --> creating a delta rating to avoid 3-way interaction
-#speech
-speech_matchedprepost$stim_type <- as.factor(speech_matchedprepost$stim_type)
-speech_matchedprepost$group <- as.factor(speech_matchedprepost$group)
-contrasts(speech_matchedprepost$stim_type) <- c(-0.5,0.5)
-contrasts(speech_matchedprepost$group) <- c(0.5,-0.5)
-
-m1 <- lmer(data=speech_matchedprepost, scale(change) ~ stim_type*group + (stim_type + group|ResponseId) + (1|stim),control=lmerControl(optimizer="bobyqa"))
-summary(m1)
-
-ggplot(data=speech_matchedprepost, aes(x=stim_type, y=value, color=group)) + 
- # ggdist::geom_dotsinterval() +
-  stat_summary(fun.data = 'mean_cl_normal', geom = 'errorbar', width = 0, alpha=0.5) +
-  stat_summary(fun.data = 'mean_cl_normal', geom = 'pointrange', alpha=0.5) +
-  theme_classic()+ 
- # theme(legend.position = "none")+
-  ylab("Change in Speech Rating after Repetition") +
-  xlab("Stimulus Type")
-
-#liking
-liking_matchedprepost$stim_type <- as.factor(liking_matchedprepost$stim_type)
-liking_matchedprepost$group <- as.factor(liking_matchedprepost$group)
-contrasts(liking_matchedprepost$stim_type) <- c(-0.5,0.5)
-contrasts(liking_matchedprepost$group) <- c(0.5,-0.5)
-
-m1 <- lmer(data=liking_matchedprepost, scale(change) ~ stim_type*group + (stim_type|ResponseId) + (1|stim),control=lmerControl(optimizer="bobyqa"))
-summary(m1)
-
-ggplot(data=liking_matchedprepost, aes(x=stim_type, y=value, color=group)) + 
- # ggdist::geom_dotsinterval() +
-  stat_summary(fun.data = 'mean_cl_normal', geom = 'errorbar', width = 0, alpha=0.5) +
-  stat_summary(fun.data = 'mean_cl_normal', geom = 'pointrange', alpha=0.5) +
-  theme_classic()+ 
- # theme(legend.position = "none")+
-  ylab("Change in Liking Rating after Repetition") +
-  xlab("Stimulus Type")
-
-cor.test(liking_matchedprepost$change, speech_matchedprepost$change)
 ```

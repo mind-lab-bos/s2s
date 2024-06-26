@@ -443,6 +443,11 @@ for (x in i){
 master$value <- as.numeric(master$value)
 master$stim <- as.factor(master$stim)
 
+master <-
+  data %>%
+  select(ResponseId, Q409) %>%
+  merge(master, by="ResponseId")
+
 #write
 write.csv(master, file='../data/master.csv')
 ```
