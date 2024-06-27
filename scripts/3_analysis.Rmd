@@ -155,6 +155,17 @@ contrasts(speech_matched$stim_type) <- c(-0.5,0.5)
 contrasts(speech_matched$group) <- c(0.5,-0.5)
 contrasts(speech_matched$pre_post) <- c(-0.5,0.5)
 
+liking_matchedprepost$stim_type <- as.factor(liking_matchedprepost$stim_type)
+liking_matchedprepost$group <- as.factor(liking_matchedprepost$group)
+contrasts(liking_matchedprepost$stim_type) <- c(-0.5,0.5)
+contrasts(liking_matchedprepost$group) <- c(0.5,-0.5)
+liking_matched$pre_post <- factor(liking_matched$pre_post, levels = c("pre", "post"))
+liking_matched$stim_type <- as.factor(liking_matchedprepost$stim_type)
+liking_matched$group <- as.factor(liking_matchedprepost$group)
+contrasts(liking_matched$stim_type) <- c(-0.5,0.5)
+contrasts(liking_matched$group) <- c(0.5,-0.5)
+contrasts(liking_matched$pre_post) <- c(-0.5,0.5)
+
 #for musicality ~ liking ratings across entire sample
 master_long$stim <- as.factor(master_long$stim)
 master_long$pre_post <- as.factor(master_long$pre_post)
@@ -418,18 +429,6 @@ ggsave(plot,file='../figures/prelim/musicalityraw_fullsample.png')
 
 
 #liking
-liking_matchedprepost$stim_type <- as.factor(liking_matchedprepost$stim_type)
-liking_matchedprepost$group <- as.factor(liking_matchedprepost$group)
-contrasts(liking_matchedprepost$stim_type) <- c(-0.5,0.5)
-contrasts(liking_matchedprepost$group) <- c(0.5,-0.5)
-liking_matched$pre_post <- factor(liking_matched$pre_post, levels = c("pre", "post"))
-liking_matched$stim_type <- as.factor(liking_matchedprepost$stim_type)
-liking_matched$group <- as.factor(liking_matchedprepost$group)
-contrasts(liking_matched$stim_type) <- c(-0.5,0.5)
-contrasts(liking_matched$group) <- c(0.5,-0.5)
-contrasts(liking_matched$pre_post) <- c(-0.5,0.5)
-
-
 m1 <- lmer(data=liking_matchedprepost, scale(change) ~ stim_type*group + (stim_type|ResponseId) + (1|stim),control=lmerControl(optimizer="bobyqa"))
 summary(m1)
 
@@ -511,7 +510,7 @@ plot<-
     axis.title.y = element_text(family="Arial", size=12))
 ggsave(plot,file='../figures/prelim/musicalityperstim_MAMC.png', width=14)
 
-plot<-
+#plot<-
   ggplot(data=liking_matchedprepost, aes(x=stim, y=post, color=group)) + 
  #ggdist::geom_dotsinterval() +
   stat_summary(fun.data = 'mean_cl_normal', geom = 'errorbar', width = 0, alpha=0.5) +
@@ -760,7 +759,17 @@ ggplot(data=betas_merged, aes(x=pre_post_musicality, y=pre_post_liking)) +
   xlab("Estimated Effect of Repetition on Musicality Ratings") +
   theme_classic()
 
-ggplot(data=betas_merged, aes(x=stim_type_musicality, y=stim_type_liking)) +
+betas_merged_no_outlier<-betas_merged %>%
+  filter(ResponseId != "R_8EGYGuIqac9niiq")
+
+ggplot(data=betas_merged , aes(x=stim_type_musicality, y=stim_type_liking)) +
+  geom_point()+
+  stat_smooth(method="lm") +
+  ylab("Estimated Effect of Stimulus Type on\nLiking Ratings") +
+  xlab("Estimated Effect of Stimulus Type on Musicality Ratings") +
+  theme_classic()
+
+ggplot(data=betas_merged_no_outlier , aes(x=stim_type_musicality, y=stim_type_liking)) +
   geom_point()+
   stat_smooth(method="lm") +
   ylab("Estimated Effect of Stimulus Type on\nLiking Ratings") +
@@ -768,6 +777,13 @@ ggplot(data=betas_merged, aes(x=stim_type_musicality, y=stim_type_liking)) +
   theme_classic()
 
 ggplot(data=betas_merged, aes(x=pre_postXstim_type_musicality, y=pre_postXstim_type_liking)) +
+  geom_point()+
+  stat_smooth(method="lm") +
+  ylab("Estimated Repetition X Stimulus Type\nInteraction on Liking Ratings") +
+  xlab("Estimated Repetition X Stimulus Type Interaction on Musicality Ratings") +
+  theme_classic()
+
+ggplot(data=betas_merged_no_outlier, aes(x=pre_postXstim_type_musicality, y=pre_postXstim_type_liking)) +
   geom_point()+
   stat_smooth(method="lm") +
   ylab("Estimated Repetition X Stimulus Type\nInteraction on Liking Ratings") +
