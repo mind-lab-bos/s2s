@@ -13,7 +13,7 @@ source("reverseCode.R")
 data <- read.csv(file='../data/s2s_April 18, 2024_08.54.csv')
 ```
 
-#make ratings df
+#make ratings df ## CURRENTLY CODED FOR FULL GMSI SCORING (AND NOT EDITED FOR BIRKBECK SAMPLE)
 ```{r}
 ratings <- data %>%
   select("ResponseId", "X1_Q397":"X48_Q454")
@@ -81,6 +81,9 @@ Gold <- data %>%
 #delete atttention checking question
 Gold$Mark..2..for.this.question. <- NULL
 
+#delete question not in birkbeck sample
+#Gold$X36..I.have.had.__.years.of.formal.training.on.a.musical.instrument..including.voice..during.my.lifetime. <- NULL
+
 #change text responses
 #Q33
 Gold$X33..At.the.peak.of.my.interest..I.practiced.___.hours.per.day.on.my.primary.instrument.[Gold$X33..At.the.peak.of.my.interest..I.practiced.___.hours.per.day.on.my.primary.instrument.=='5 or more'] <- 7
@@ -92,7 +95,7 @@ Gold$X33..At.the.peak.of.my.interest..I.practiced.___.hours.per.day.on.my.primar
 Gold$X33..At.the.peak.of.my.interest..I.practiced.___.hours.per.day.on.my.primary.instrument.[Gold$X33..At.the.peak.of.my.interest..I.practiced.___.hours.per.day.on.my.primary.instrument.=='0'] <- 1
 Gold$X33..At.the.peak.of.my.interest..I.practiced.___.hours.per.day.on.my.primary.instrument. <- as.numeric(Gold$X33..At.the.peak.of.my.interest..I.practiced.___.hours.per.day.on.my.primary.instrument.)
 #Q32
-Gold$X32..I.engaged.in.regular..daily.practice.of.a.musical.instrument..including.voice..for.___.years.[Gold$X32..I.engaged.in.regular..daily.practice.of.a.musical.instrument..including.voice..for.___.years.=='10 or more'] <- 7
+Gold$X32..I.engaged.in.regular..daily.practice.of.a.musical.instrument..including.voice..for.___.years.[Gold$X32..I.engaged.in.regular..daily.practice.of.a.musical.instrument..including.voice..for.___.years.=='10 or more'] <- 7 #RECODING THIS AS 6 SINCE OPTION MISSING IN BIRKBECK SAMPLE
 Gold$X32..I.engaged.in.regular..daily.practice.of.a.musical.instrument..including.voice..for.___.years.[Gold$X32..I.engaged.in.regular..daily.practice.of.a.musical.instrument..including.voice..for.___.years.=='9-Jun'] <- 6
 Gold$X32..I.engaged.in.regular..daily.practice.of.a.musical.instrument..including.voice..for.___.years.[Gold$X32..I.engaged.in.regular..daily.practice.of.a.musical.instrument..including.voice..for.___.years.=='5-Apr'] <- 5
 Gold$X32..I.engaged.in.regular..daily.practice.of.a.musical.instrument..including.voice..for.___.years.[Gold$X32..I.engaged.in.regular..daily.practice.of.a.musical.instrument..including.voice..for.___.years.=='3'] <- 4
@@ -118,6 +121,7 @@ Gold$X35..I.have.had.formal.training.in.music.theory.for.__.years[Gold$X35..I.ha
 Gold$X35..I.have.had.formal.training.in.music.theory.for.__.years[Gold$X35..I.have.had.formal.training.in.music.theory.for.__.years=='0.5'] <- 2
 Gold$X35..I.have.had.formal.training.in.music.theory.for.__.years[Gold$X35..I.have.had.formal.training.in.music.theory.for.__.years=='0'] <- 1
 Gold$X35..I.have.had.formal.training.in.music.theory.for.__.years <- as.numeric(Gold$X35..I.have.had.formal.training.in.music.theory.for.__.years)
+
 #Q36
 Gold$X36..I.have.had.__.years.of.formal.training.on.a.musical.instrument..including.voice..during.my.lifetime.[Gold$X36..I.have.had.__.years.of.formal.training.on.a.musical.instrument..including.voice..during.my.lifetime.=='10 or more'] <- 7
 Gold$X36..I.have.had.__.years.of.formal.training.on.a.musical.instrument..including.voice..during.my.lifetime.[Gold$X36..I.have.had.__.years.of.formal.training.on.a.musical.instrument..including.voice..during.my.lifetime.=='9-Jun'] <- 6
@@ -127,6 +131,7 @@ Gold$X36..I.have.had.__.years.of.formal.training.on.a.musical.instrument..includ
 Gold$X36..I.have.had.__.years.of.formal.training.on.a.musical.instrument..including.voice..during.my.lifetime.[Gold$X36..I.have.had.__.years.of.formal.training.on.a.musical.instrument..including.voice..during.my.lifetime.=='0.5'] <- 2
 Gold$X36..I.have.had.__.years.of.formal.training.on.a.musical.instrument..including.voice..during.my.lifetime.[Gold$X36..I.have.had.__.years.of.formal.training.on.a.musical.instrument..including.voice..during.my.lifetime.=='0'] <- 1
 Gold$X36..I.have.had.__.years.of.formal.training.on.a.musical.instrument..including.voice..during.my.lifetime. <- as.numeric(Gold$X36..I.have.had.__.years.of.formal.training.on.a.musical.instrument..including.voice..during.my.lifetime.)
+
 #Q37
 Gold$X37..I.can.play.___.musical.instruments[Gold$X37..I.can.play.___.musical.instruments=='6 or more'] <- 7
 Gold$X37..I.can.play.___.musical.instruments[Gold$X37..I.can.play.___.musical.instruments=='5'] <- 6
@@ -180,9 +185,8 @@ cols_perceptualabilities <- c("X5..I.am.able.to.judge.whether.someone.is.a.good.
 
 cols_musicaltraining <- c("X14..I.have.never.been.complimented.for.my.talents.as.a.musical.performer....Completely.Disagree.Completely.Agree" , "X27..I.would.not.consider.myself.a.musician....Completely.Disagree.Completely.Agree", 
 "X32..I.engaged.in.regular..daily.practice.of.a.musical.instrument..including.voice..for.___.years." , 
-"X33..At.the.peak.of.my.interest..I.practiced.___.hours.per.day.on.my.primary.instrument." , ## think about how this is scored? doesn't seem like a lot of people answered
-"X35..I.have.had.formal.training.in.music.theory.for.__.years" , 
-"X36..I.have.had.__.years.of.formal.training.on.a.musical.instrument..including.voice..during.my.lifetime." , 
+"X33..At.the.peak.of.my.interest..I.practiced.___.hours.per.day.on.my.primary.instrument." , 
+"X35..I.have.had.formal.training.in.music.theory.for.__.years" , "X36..I.have.had.__.years.of.formal.training.on.a.musical.instrument..including.voice..during.my.lifetime.",
 "X37..I.can.play.___.musical.instruments")
 
 
@@ -232,7 +236,7 @@ ratings$Gold_total <- apply(Gold,1, sum)/38 # total GoldMSI score
 ratings$Gold_activeengagement <- apply(Gold[cols_activeengagement], 1,sum)/9
 ratings$Gold_perceptualabilities <- apply(Gold[cols_perceptualabilities],1, sum)/9
 ratings$Gold_musicaltraining <-apply(Gold[cols_musicaltraining],1, sum)/7
-ratings$Gold_singingabilities <- apply(Gold[cols_singingabilities],1, sum)/7
+ratings$Gold_singingabilities <- apply(Gold[cols_singingabilities],1, sum)/6
 ratings$Gold_emotion <- apply(Gold[cols_emotion],1, sum)/6
 ratings$Gold_musicalsophistication <- apply(Gold[cols_musicalsophistication],1, sum)/18
 ```
@@ -449,5 +453,5 @@ master <-
   merge(master, by="ResponseId")
 
 #write
-write.csv(master, file='../data/master.csv')
+write.csv(master, file='../data/master_bostonfullgmsi.csv')
 ```

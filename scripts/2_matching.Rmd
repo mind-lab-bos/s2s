@@ -11,8 +11,64 @@ library(tidyverse)
 
 ```{r}
 master <- read.csv(file="../data/master.csv") 
-master_single <- read.csv(file="../data/master.csv") %>%
+master$location <- 'boston'
+master_birkbeck <- read.csv(file='../data/master_Birkbeck.csv')
+master_birkbeck$location <- 'birkbeck'
+master <- rbind(master, master_birkbeck)
+master_single <- master %>%
   distinct(ResponseId, .keep_all = TRUE)
+
+master_birkbecksingle <- master_birkbeck %>%
+  distinct(ResponseId, .keep_all = TRUE)
+
+master_bostonsingle <- master %>%
+  distinct(ResponseId, .keep_all = TRUE)
+```
+
+#histograms
+```{r}
+#eBMRQ scores by sample
+master_birkbecksingle %>% 
+  ggplot(aes(x=eBMRQ_total)) +
+  geom_histogram(binwidth=5) +
+  theme_classic() +
+  xlab("eBMRQ Score") +
+  ylab("Count") +
+  ggtitle("Birkbeck Sample") 
+
+master_bostonsingle %>% 
+  ggplot(aes(x=eBMRQ_total)) +
+  geom_histogram(binwidth=5) +
+  theme_classic() +
+  xlab("eBMRQ Score") +
+  ylab("Count") +
+  ggtitle("Boston Sample") 
+
+#PAS no audio histograms by sample
+
+master_birkbecksingle %>% 
+  ggplot(aes(x=PASS_noaud)) +
+  geom_histogram(binwidth=3) +
+  theme_classic() +
+  xlab("PAS Score (no auditory items)") +
+  ylab("Count") +
+  ggtitle("Birkbeck Sample") 
+
+master_bostonsingle %>% 
+  ggplot(aes(x=PASS_noaud)) +
+  geom_histogram(binwidth=3) +
+  theme_classic() +
+  xlab("PAS Score (no auditory items)") +
+  ylab("Count") +
+  ggtitle("Boston Sample") 
+
+master_bostonsingle %>% 
+  ggplot(aes(x=eBMRQ_total)) +
+  geom_histogram(binwidth=5) +
+  theme_classic() +
+  xlab("eBMRQ Score") +
+  ylab("Count") +
+  ggtitle("Boston Sample")
 ```
 
 
@@ -23,22 +79,23 @@ quantile(master_single$eBMRQ_total, probs = c(.1), na.rm=TRUE)
 master %>% distinct(ResponseId, .keep_all = TRUE) %>%
   ggplot(aes(x=PASS_noaud, y=eBMRQ_total))+
   geom_point(alpha=0.65) +
-  geom_hline(yintercept = 67, linetype="dotted", color="blue") +
-  geom_vline(xintercept = 16.84785, linetype="dotted", color="red") +
+  geom_hline(yintercept = 69.6, linetype="dotted", color="blue") +
+  geom_vline(xintercept = 16.98947, linetype="dotted", color="red") +
   theme_classic() +
+   theme(legend.position="none")+
   xlab("PAS Scores (Sound Items Removed)") +
   ylab("Total eBMRQ Scores") 
- # geom_point(data=df.match, aes(color=group)) 
+  #geom_point(data=df.match, aes(color=group)) 
 
 
 general_hedonics <- 
   master_single %>%
-  subset(PASS_noaud<16.84785)
+  subset(PASS_noaud<16.98947)
 
-musical_anhedonics <- subset(general_hedonics, eBMRQ_total< 67)
+musical_anhedonics <- subset(general_hedonics, eBMRQ_total< 69.6)
 musical_anhedonics$group = "Anhedonic"
 
-hedonics <- subset(general_hedonics, eBMRQ_total > 67)
+hedonics <- subset(general_hedonics, eBMRQ_total > 69.6)
 hedonics$group = "Hedonic"
 
 potential_matchedcontrols <- rbind(musical_anhedonics, hedonics)
