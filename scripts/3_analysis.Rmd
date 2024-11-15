@@ -334,15 +334,12 @@ m2b <- lmer(data=speech_matched, scale(value) ~ group*pre_post + (group|Response
 summary(m2b)
 
 #and laurel v yanny hearers
-m1c <- lmer(data=speech_master, scale(value) ~ Q409*pre_post*stim_type + (Q409:pre_post + Q409:stim_type + Q409|ResponseId) + (stim_type|stim), control=lmerControl(optimizer="bobyqa"))
+m1c <- lmer(data=speech_master, scale(value) ~ Q409*pre_post*stim_type + (Q409|ResponseId), control=lmerControl(optimizer="bobyqa"))
 summary(m1c)
 
-m11 <- lmer(data=speech_master, scale(value) ~ Q409*stim_type + (Q409*stim_type|ResponseId) + (1|stim), control=lmerControl(optimizer="bobyqa"))
-summary(m11)
+m2c <- lmer(data=liking_master, scale(value) ~ Q409*pre_post*stim_type + (1|ResponseId), control=lmerControl(optimizer="bobyqa"))
+summary(m2c)
 
-
-m10a <- lmer(data=speech_master, scale(value) ~ Q409*pre_post*stim_type + (Q409 + pre_post|ResponseId), control=lmerControl(optimizer="bobyqa"))
-summary(m10a)
 #plot <-
 speech_master %>%
   subset(location=="boston") %>%
