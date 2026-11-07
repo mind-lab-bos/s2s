@@ -10,19 +10,45 @@ library(tidyverse)
 ```
 
 ```{r}
-master <- read.csv(file="../data/master.csv") 
+master <- read.csv(file="../data/master_bostonfullgmsi.csv") 
 master$location <- 'boston'
 master_birkbeck <- read.csv(file='../data/master_Birkbeck.csv')
 master_birkbeck$location <- 'birkbeck'
-master <- rbind(master, master_birkbeck)
-master_single <- master %>%
-  distinct(ResponseId, .keep_all = TRUE)
 
+#master_single <- master %>%
+  #distinct(ResponseId, .keep_all = TRUE)
+
+#write
 master_birkbecksingle <- master_birkbeck %>%
   distinct(ResponseId, .keep_all = TRUE)
 
 master_bostonsingle <- master %>%
   distinct(ResponseId, .keep_all = TRUE)
+
+birkbeck_gmsi <- read.csv(file='../data/birkbeck_gmsi_scored.csv')
+
+master_birkbecksingle_sub <- master_birkbecksingle[c(1:10, 18:37)]
+birkbeck_gmsi$birkbeck_gmsi.Participant.Private.ID
+
+master_birkbecksingle <- merge(master_birkbecksingle_sub, birkbeck_gmsi, by.x="ResponseId", by.y="birkbeck_gmsi.Participant.Private.ID")
+
+master_birkbecksingle <- master_birkbecksingle[c(1, 3:30, 70:76)]
+
+master_bostonsingle <- master_bostonsingle[2:37]
+
+master_single <- rbind(master_birkbecksingle,master_bostonsingle)
+
+write.csv(master_single, "../data/master_single.csv")
+
+birkbeck_gmsi<- birkbeck_gmsi[40:47]
+
+#master_birkbeck <- master_birkbeck[2:37]
+master_birkbeck <- master_birkbeck %>%
+  select(!Gold_total:Gold_musicalsophistication) %>%
+  merge(birkbeck_gmsi, by.x="ResponseId", by.y="birkbeck_gmsi.Participant.Private.ID")
+
+
+master <- rbind(master, master_birkbeck)
 ```
 
 #histograms
@@ -104,9 +130,17 @@ potential_matchedcontrols$group = ifelse(potential_matchedcontrols$group == 'Anh
 potential_matchedcontrols$group <- as.factor(potential_matchedcontrols$group)
 matched <- MatchIt::matchit(group ~ Gold_perceptualabilities + PASS_noaud + Gold_musicaltraining, data=potential_matchedcontrols, method='nearest', ratio=1)
 summary(matched)
+
 df.match <- MatchIt::match.data(matched)[1:ncol(potential_matchedcontrols)]
 
 df.match$group = ifelse(df.match$group == '0', "Matched Controls", "Musical Anhedonics")
+
+'%!in%' <- function(x,y)!('%in%'(x,y))
+
+check <- read.csv(file='../data/anhedonics_matchedcontrols.csv')
+
+df.match %>%
+  subset(ResponseId %!in% check$ResponseId)
 
 controls <- subset(df.match, group=="Matched Controls")
 anhedonics <- subset(df.match, group=="Musical Anhedonics")

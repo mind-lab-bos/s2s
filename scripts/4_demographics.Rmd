@@ -1,0 +1,180 @@
+---
+title: "4_demographics"
+output: html_document
+date: "2025-01-15"
+---
+
+```{r}
+library(tidyverse)
+```
+
+```{r}
+group_IDS <- read.csv('../data/anhedonics_matchedcontrols.csv')
+
+birkbeck_demo <- read.csv('../data/birkbeck_demographics.csv') %>%
+  subset(Response.Type=="response") %>%
+  select(Participant.Private.ID, Question, Response)
+
+birkbeck_age <- birkbeck_demo %>%
+  subset(Question=="Your Age") %>%
+    pivot_wider(names_from="Question", values_from="Response")
+
+birkbeck_race_ethnicity <- birkbeck_demo %>%
+  subset(Question=="What is your ethnicity (check all that apply)?" & Response != "1" & Response != "4" & Response != "6" & Response != "7" & Response != "2") %>%
+    pivot_wider(names_from="Question", values_from="Response")
+
+birkbeck_sex <- birkbeck_demo %>%
+  subset(Question=="What sex were you assigned at birth, on your original birth certificate?" & Response != "1" & Response != "2" & Response != "3") %>%
+    pivot_wider(names_from="Question", values_from="Response")
+
+birkbeck_gender <- birkbeck_demo %>%
+  subset(Question=="What is your gender identity? (Check all that apply)" & Response != "1" & Response != "2" & Response != "3" &  Response != "5" &  Response != "9") %>%
+    pivot_wider(names_from="Question", values_from="Response")
+
+
+
+boston_demo <- read.csv('../data/s2s_April 18, 2024_08.54.csv')[c(374:377, 9)]
+names(boston_demo)[1] <- "Your Age"
+names(boston_demo)[2] <- "What is your ethnicity (check all that apply)?"
+names(boston_demo)[3] <- "What sex were you assigned at birth, on your original birth certificate?"
+names(boston_demo)[4] <- "What is your gender identity? (Check all that apply)"
+
+master_scored <- read.csv('../data/master_single.csv')  
+
+master_birkbeck <- merge(master_scored, birkbeck_age, by.x="ResponseId", by.y="Participant.Private.ID") %>%
+  merge(birkbeck_sex, by.x="ResponseId",by.y="Participant.Private.ID") %>%
+  merge(birkbeck_race_ethnicity, by.x="ResponseId",by.y="Participant.Private.ID") %>%
+  merge(birkbeck_gender, by.x="ResponseId",by.y="Participant.Private.ID")
+
+master_boston <- merge(master_scored, boston_demo, by="ResponseId")
+
+masterdemo <- rbind(master_birkbeck, master_boston)
+
+groupdemo <- merge(group_IDS,masterdemo)
+
+anhdemo <- groupdemo %>%
+  subset(group=="Musical Anhedonics")
+
+mcdemo <- groupdemo %>%
+  subset(group=="Matched Controls")
+```
+
+```{r}
+masterdemo$`Your Age` <- as.numeric(masterdemo$`Your Age`)
+mean(masterdemo$`Your Age`, na.rm = TRUE)
+sd(masterdemo$`Your Age`, na.rm = TRUE)
+
+mean(masterdemo$eBMRQ_total)
+sd(masterdemo$eBMRQ_total)
+
+mean(masterdemo$PASS_noaud)
+sd(masterdemo$PASS_noaud)
+
+mean(masterdemo$AIMS_total)
+sd(masterdemo$AIMS_total)
+
+mean(masterdemo$Gold_activeengagement)
+sd(masterdemo$Gold_activeengagement)
+
+mean(masterdemo$Gold_perceptualabilities)
+sd(masterdemo$Gold_perceptualabilities)
+
+mean(masterdemo$Gold_musicaltraining, na.rm=TRUE)
+sd(masterdemo$Gold_musicaltraining, na.rm=TRUE)
+
+mean(masterdemo$Gold_singingabilities)
+sd(masterdemo$Gold_singingabilities)
+
+mean(masterdemo$Gold_emotion)
+sd(masterdemo$Gold_emotion)
+
+mean(masterdemo$Gold_musicalsophistication, na.rm=TRUE)
+sd(masterdemo$Gold_musicalsophistication, na.rm = TRUE)
+
+table(masterdemo$`What sex were you assigned at birth, on your original birth certificate?`)
+
+table(masterdemo$`What is your gender identity? (Check all that apply)`)
+
+table(masterdemo$`What is your ethnicity (check all that apply)?`)
+
+
+#MA
+anhdemo$`Your Age` <- as.numeric(anhdemo$`Your Age`)
+mean(anhdemo$`Your Age`, na.rm = TRUE)
+sd(anhdemo$`Your Age`, na.rm = TRUE)
+
+
+mean(anhdemo$eBMRQ_total)
+sd(anhdemo$eBMRQ_total)
+
+mean(anhdemo$PASS_noaud)
+sd(anhdemo$PASS_noaud)
+
+mean(anhdemo$AIMS_total)
+sd(anhdemo$AIMS_total)
+
+table(anhdemo$`What sex were you assigned at birth, on your original birth certificate?`)
+
+mean(anhdemo$Gold_activeengagement)
+sd(anhdemo$Gold_activeengagement)
+
+mean(anhdemo$Gold_perceptualabilities)
+sd(anhdemo$Gold_perceptualabilities)
+
+mean(anhdemo$Gold_musicaltraining)
+sd(anhdemo$Gold_musicaltraining)
+
+mean(anhdemo$Gold_singingabilities)
+sd(anhdemo$Gold_singingabilities)
+
+mean(anhdemo$Gold_emotion)
+sd(anhdemo$Gold_emotion)
+
+mean(anhdemo$Gold_musicalsophistication)
+sd(anhdemo$Gold_musicalsophistication)
+
+table(anhdemo$`What is your gender identity? (Check all that apply)`)
+
+table(anhdemo$`What is your ethnicity (check all that apply)?`)
+
+#MC
+mcdemo$`Your Age` <- as.numeric(mcdemo$`Your Age`)
+mean(mcdemo$`Your Age`, na.rm = TRUE)
+sd(mcdemo$`Your Age`, na.rm = TRUE)
+
+mean(mcdemo$eBMRQ_total)
+sd(mcdemo$eBMRQ_total)
+
+mean(mcdemo$PASS_noaud)
+sd(mcdemo$PASS_noaud)
+
+mean(mcdemo$AIMS_total)
+sd(mcdemo$AIMS_total)
+
+table(mcdemo$`What sex were you assigned at birth, on your original birth certificate?`)
+
+mean(mcdemo$Gold_activeengagement)
+sd(mcdemo$Gold_activeengagement)
+
+mean(mcdemo$Gold_perceptualabilities)
+sd(mcdemo$Gold_perceptualabilities)
+
+mean(mcdemo$Gold_musicaltraining)
+sd(mcdemo$Gold_musicaltraining)
+
+mean(mcdemo$Gold_singingabilities)
+sd(mcdemo$Gold_singingabilities)
+
+mean(mcdemo$Gold_emotion)
+sd(mcdemo$Gold_emotion)
+
+mean(mcdemo$Gold_musicalsophistication)
+sd(mcdemo$Gold_musicalsophistication)
+
+table(mcdemo$`What is your gender identity? (Check all that apply)`)
+
+table(mcdemo$`What is your ethnicity (check all that apply)?`)
+
+# t.tests for differences across groups
+t.test(mcdemo$AIMS_total, anhdemo$AIMS_total, paired=FALSE)
+```
